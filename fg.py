@@ -19,11 +19,11 @@ proxy = {}
 
 
 board_names = [
-    'h','gif','d','e','s','u','a','c','g','hr','m','o',
-    'p','r','t','v','w','wg','i','ic','cm','y','k',
-    'r9k','3','adv','an','cgl','ck','co','fa','fit',
-    'int','jp','lit','mu','n','new','po','sci','sp',
-    'tg','toy','trv','tv','x'
+    'a', 'b', 'c', 'd', 'e', 'f', 'gif', 'h', 'hr', 'k', 'm', 'o', 'p', 'r', 
+    's', 't', 'u', 'v', 'vg', 'w', 'wg', 'i', 'ic','r9k','cm', 'y', '3', 'adv',
+    'an', 'cgl', 'ck', 'co', 'diy', 'fa', 'fit', 'hc', 'hm', 'int', 'jp', 
+    'lit', 'mlp', 'mu', 'n', 'po', 'pol', 'sci', 'soc', 'sp', 'tg', 'toy', 
+    'trv', 'tv', 'vp', 'x'
 ]
 
 
