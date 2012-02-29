@@ -1711,5 +1711,5 @@ class MainFrame(wx.Frame):
 
 
 app = wx.App(redirect=False)
-mainframe = MainFrame(None, -1, '')
+mainframe = MainFrame(None, -1, 'Gauntlet')
 app.MainLoop()
