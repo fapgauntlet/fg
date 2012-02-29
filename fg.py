@@ -782,7 +782,7 @@ class ImageManager(object):
         #self.show_count = []
         self.cur_image_path = None
         self.hist = []
-        self.image_data = {}
+        self.imgdata = {}
         self.scale_enabled = True
         self.folders = ['cache/']
         self.paused = False
@@ -807,7 +807,7 @@ class ImageManager(object):
         # test
         for g in self.folders:
             self.add_folder_images(g)
-        self.switch_image()
+        self.switchimg()
         
     def load_folder_cfg(self, fn=None):
         if fn is None:
@@ -870,7 +870,7 @@ class ImageManager(object):
         if fn is None:
             fn = 'dispdata.cfg'
         s = ''
-        for imgdata in self.image_data.values():
+        for imgdata in self.imgdata.values():
             bn = imgdata.basename
             if imgdata.count is not None:
                 if bn not in self.playdata:
@@ -907,17 +907,17 @@ class ImageManager(object):
             if f is not None:
                 f.close()
     
-    def switch_image(self, imagepath=None):
+    def switchimg(self, imagepath=None):
         if self.cur_image_path is not None and imagepath is None:
             # only push image onto history if autoadvancing or forward key was
             # pressed
             self.hist.append(self.cur_image_path)
 
         if imagepath is None:
-            a = self.image_data.keys()
+            a = self.imgdata.keys()
             if a:
                 if 1: # semi-random
-                    l = self.image_data.items()
+                    l = self.imgdata.items()
                     l.sort(key=lambda a: a[1].show_count)
                     l = filter(lambda a: a[1].show_count == l[0][1].show_count, l)
                     imagepath = l[randint(0, len(l)-1)][0]
@@ -926,7 +926,7 @@ class ImageManager(object):
                     if imagepath == self.cur_image_path:
                         for i in l:
                             if i is not imagepath:
-                                switched = self.switch_image(i[0])
+                                switched = self.switchimg(i[0])
                                 if switched:
                                     return switched
                 else: # ordered
@@ -939,28 +939,28 @@ class ImageManager(object):
             else:
                 return False
         
-        if self.image_data[imagepath].blacklisted is not None:
-            self.image_data[imagepath].show_count += 50
-            #del self.image_data[imagepath]
+        if self.imgdata[imagepath].blacklisted is not None:
+            self.imgdata[imagepath].show_count += 50
+            #del self.imgdata[imagepath]
             return False
         
         # make sure the image exists
         if not os.path.exists(imagepath):
-            #if imagepath in self.image_data:
-            #    del self.image_data[imagepath]
-            self.image_data[imagepath].show_count += 50
+            #if imagepath in self.imgdata:
+            #    del self.imgdata[imagepath]
+            self.imgdata[imagepath].show_count += 50
             return False
         
         # make sure the image data is stored
-        if imagepath not in self.image_data:
-            self.add_image_data(imagepath)
+        if imagepath not in self.imgdata:
+            self.add_imgdata(imagepath)
         
         # load the image
         if imagepath[-4:] == '.gif':
             try:
                 ani = wx.animate.Animation(imagepath)
             except:
-                self.image_data[imagepath].show_count += 50
+                self.imgdata[imagepath].show_count += 50
                 return False
             self.cur_animated = True
             self.cur_ani_index = 0
@@ -998,7 +998,7 @@ class ImageManager(object):
             try:
                 n = wx.Bitmap(imagepath)
             except:
-                self.image_data[imagepath].show_count += 50
+                self.imgdata[imagepath].show_count += 50
                 return False
             self.cur_animated = False
             self.cur_ani_index = 0
@@ -1007,7 +1007,7 @@ class ImageManager(object):
         # clear the fullscreen bitmap
         self.fs_bitmap = []
         
-        imgdata = self.image_data[imagepath]
+        imgdata = self.imgdata[imagepath]
         
         self.cur_image_path = imagepath
         self.cur_image_start_time = time.time()
@@ -1050,7 +1050,7 @@ class ImageManager(object):
             self.cur_count = int(imgdata.count)
         
         # increment the count of how many times this image has been shown
-        self.image_data[imagepath].show_count += 1
+        self.imgdata[imagepath].show_count += 1
         
         # fap frenzy
         if self.use_additional_rate:
@@ -1077,7 +1077,7 @@ class ImageManager(object):
         else:
             self.cur_ani_index = 0
     
-    def show_image(self, parent):
+    def showimg(self, parent):
         if self.cur_animated:
             t = int(time.time() * 1000)
             n = t - self.last_ani_time
@@ -1195,8 +1195,8 @@ class ImageManager(object):
             
             # auto advancement
             if self.auto_advance and count == self.cur_count:
-                for i in self.image_data:
-                    switched = self.switch_image()
+                for i in self.imgdata:
+                    switched = self.switchimg()
                     if switched:
                         break
 
@@ -1205,15 +1205,15 @@ class ImageManager(object):
             dc.SetTextForeground((200, 200, 200))
             dc.DrawText("No images cached yet.", 10, dch/2 - 55)
 	    dc.DrawText("Right-click to get started.", 10, dch/2 + 5)
-            for i in self.image_data:
-                switched = self.switch_image()
+            for i in self.imgdata:
+                switched = self.switchimg()
                 if switched:
                     break
 
-    def add_image_data(self, path, extra_data=None):
-        if path not in self.image_data:
-            self.image_data[path] = ImageData(path)
-        imgdat = self.image_data[path]
+    def add_imgdata(self, path, extra_data=None):
+        if path not in self.imgdata:
+            self.imgdata[path] = ImageData(path)
+        imgdat = self.imgdata[path]
         if imgdat.basename in self.playdata:
             pd = self.playdata[imgdat.basename]
             if 'count' in pd:
@@ -1233,15 +1233,15 @@ class ImageManager(object):
                 m = os.path.join(path, n)
                 if os.path.isfile(m):
                     if os.path.splitext(m)[1] in ('.gif', '.jpg', '.bmp', '.png'):
-                        self.add_image_data(m)
+                        self.add_imgdata(m)
     
     def rem_folder_images(self, path):
         if os.path.isdir(path):
             if path[-1] in ('\\', '/'):
                 path = os.path.dirname(path)
-            for i in self.image_data.keys():
+            for i in self.imgdata.keys():
                 if os.path.dirname(i) == path:
-                    del self.image_data[i]
+                    del self.imgdata[i]
 
 
 
@@ -1260,8 +1260,7 @@ class DownloadManager(threading.Thread):
     
     def run(self):
         while 1:
-            #sleep = 2.5
-            sleep = 0.0
+            sleep = 0.01
             need_refresh = False
             try:
                 if self.parent.download_enabled and len(self.new_cached) < 50:
@@ -1276,7 +1275,7 @@ class DownloadManager(threading.Thread):
                             t.need_update = False
                         image_posts.extend(filter(lambda p: 'img_url' in p, t.posts.values()))
                     to_get = []
-                    pd = self.parent.image_manager.playdata
+                    pd = self.parent.imgmanager.playdata
                     for img_post in image_posts:
                         image_base = img_post['img_url'].rsplit('/', 1)[-1]
                         if image_base not in os.listdir(cache_dir):
@@ -1440,7 +1439,7 @@ class MainFrame(wx.Frame):
         self.key_state = False
         self.fap_frenzy = False
         
-        self.image_manager = ImageManager()
+        self.imgmanager = ImageManager()
         self.download_manager = DownloadManager(self)
         self.download_manager.start()
         
@@ -1478,7 +1477,7 @@ class MainFrame(wx.Frame):
         self.menu_autoadv_id = wx.NewId()
         self.menu_autoadv = wx.MenuItem(self.menu, self.menu_autoadv_id, '&Auto Advance', kind=wx.ITEM_CHECK)
         self.menu.AppendItem(self.menu_autoadv)
-        self.menu_autoadv.Check(self.image_manager.auto_advance)
+        self.menu_autoadv.Check(self.imgmanager.auto_advance)
         
         self.menu_fapfrenzy_id = wx.NewId()
         self.menu_fapfrenzy = wx.MenuItem(self.menu, self.menu_fapfrenzy_id, '&Fap Frenzy', kind=wx.ITEM_CHECK)
@@ -1541,20 +1540,20 @@ class MainFrame(wx.Frame):
         self.Show(True)
     
     def OnClose(self, event):
-        self.image_manager.save_display_data()
-        self.image_manager.save_folder_cfg()
+        self.imgmanager.save_display_data()
+        self.imgmanager.save_folder_cfg()
         event.Skip()
     
     def OnScale(self, event):
-        self.image_manager.scale_enabled = not self.image_manager.scale_enabled
-        self.menu_scale.Check(self.image_manager.scale_enabled)
+        self.imgmanager.scale_enabled = not self.imgmanager.scale_enabled
+        self.menu_scale.Check(self.imgmanager.scale_enabled)
         self.Unpause()
     
     def OnFullScreen(self, event):
         self.ShowFullScreen(not self.IsFullScreen())
         # let the image manager know the state
-        self.image_manager.fullscreen = self.IsFullScreen()
-        self.menu_fullscreen.Check(self.image_manager.fullscreen)
+        self.imgmanager.fullscreen = self.IsFullScreen()
+        self.menu_fullscreen.Check(self.imgmanager.fullscreen)
         self.Unpause()
     
     def OnDLEnable(self, event):
@@ -1563,8 +1562,8 @@ class MainFrame(wx.Frame):
         self.Unpause()
     
     def OnBlackList(self, event):
-        self.image_manager.image_data[self.image_manager.cur_image_path].blacklisted = True
-        self.image_manager.switch_image()
+        self.imgmanager.imgdata[self.imgmanager.cur_image_path].blacklisted = True
+        self.imgmanager.switchimg()
         self.Unpause()
     
     def OnGifMode(self, event):
@@ -1573,22 +1572,22 @@ class MainFrame(wx.Frame):
         self.Unpause()
     
     def OnAutoAdvMode(self, event):
-        self.image_manager.auto_advance = not self.image_manager.auto_advance
-        self.menu_autoadv.Check(self.image_manager.auto_advance)
+        self.imgmanager.auto_advance = not self.imgmanager.auto_advance
+        self.menu_autoadv.Check(self.imgmanager.auto_advance)
         self.Unpause()
     
     def OnFapFrenzy(self, event):
         self.fap_frenzy = not self.fap_frenzy
-        self.image_manager.use_additional_rate = self.fap_frenzy
+        self.imgmanager.use_additional_rate = self.fap_frenzy
         if self.fap_frenzy:
-            self.image_manager.additional_rate = 0.0
+            self.imgmanager.additional_rate = 0.0
         self.menu_fapfrenzy.Check(self.fap_frenzy)
         self.Unpause()
     
     def OnICame(self, event):
         import wx.lib.dialogs
         msg = ''
-        iic = self.image_manager.intensity_image_count
+        iic = self.imgmanager.intensity_image_count
         
         for k, v in iic.items():
             msg += k+':\n'
@@ -1610,7 +1609,7 @@ class MainFrame(wx.Frame):
     def OnAddFolder(self, event):
         dlg = wx.DirDialog(self, 'Choose a directory:')
         if dlg.ShowModal() == wx.ID_OK:
-            self.image_manager.add_folder_images(dlg.GetPath())
+            self.imgmanager.add_folder_images(dlg.GetPath())
         dlg.Destroy()
         self.Unpause()
     
@@ -1628,14 +1627,14 @@ class MainFrame(wx.Frame):
         exit()
     
     def OnLeftDown(self, event):
-        if self.image_manager.paused:
+        if self.imgmanager.paused:
             self.Unpause()
         else:
             self.Pause()
         # we don't want to switch actually
         #else:
-        #    for i in self.image_manager.image_data:
-        #        switched = self.image_manager.switch_image()
+        #    for i in self.imgmanager.imgdata:
+        #        switched = self.imgmanager.switchimg()
         #        if switched:
         #            break
         event.Skip()
@@ -1654,7 +1653,7 @@ class MainFrame(wx.Frame):
         
         # set the cursor to vanish in 1 second if there's no movement
         # and we're not paused
-        if not self.image_manager.paused:
+        if not self.imgmanager.paused:
             def bleh():
                 self.SetCursor(wx.StockCursor(wx.CURSOR_BLANK))
                 self.mouse_timer = None
@@ -1674,14 +1673,14 @@ class MainFrame(wx.Frame):
                 switched = None
                 self.key_state = True
                 # switch to the next image (or previous)
-                for i in self.image_manager.image_data:
+                for i in self.imgmanager.imgdata:
                     if keycode == wx.WXK_LEFT:
                         img = None
-                        if len(self.image_manager.hist) > 0:
-                            prev = self.image_manager.hist.pop()
-                            switched = self.image_manager.switch_image(prev)
+                        if len(self.imgmanager.hist) > 0:
+                            prev = self.imgmanager.hist.pop()
+                            switched = self.imgmanager.switchimg(prev)
                     else:
-                        switched = self.image_manager.switch_image()
+                        switched = self.imgmanager.switchimg()
 
                     if switched:
                         break
@@ -1690,23 +1689,23 @@ class MainFrame(wx.Frame):
         self.key_state = False
     
     def Pause(self):
-        self.image_manager.paused = True
+        self.imgmanager.paused = True
     
     def Unpause(self):
-        if self.image_manager.paused:
-            self.image_manager.paused = False
+        if self.imgmanager.paused:
+            self.imgmanager.paused = False
             self.Refresh()
     
     def OnPaint(self, event):
-        if self.download_enabled and len(filter(lambda a: not a.show_count, self.image_manager.image_data.values())) < 40:
+        if self.download_enabled and len(filter(lambda a: not a.show_count, self.imgmanager.imgdata.values())) < 40:
             a = self.download_manager.get_new_cached()
             for b in a:
-                self.image_manager.add_image_data(b[0], b[1])
-        if self.image_manager.paused:
+                self.imgmanager.add_imgdata(b[0], b[1])
+        if self.imgmanager.paused:
             self.refresh_timer.Restart(100)
         else:
             self.refresh_timer.Restart(30) #16
-        self.image_manager.show_image(self)
+        self.imgmanager.showimg(self)
         
 
 
