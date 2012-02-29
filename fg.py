@@ -569,17 +569,7 @@ class DLManagerDialog(wx.Dialog):
                 n.Bind(wx.EVT_ENTER_WINDOW, damnit(n.force_scrolling))
                 
                 n_sizer.Add((5,10)) # a little bit of padding
-                
-                # download checkbox
-                check = wx.CheckBox(n, -1, "Download images from this thread")
-                if thread.is_source:
-                    check.SetValue(True)
-                check.Bind(wx.EVT_CHECKBOX, GoddamnButton(check, thread))
-                n_sizer.Add(check, 0)
-                n.thread_panel_check = check
-                
-                n_sizer.Add((5,8)) # a little bit of padding
-                
+
                 # content sizer
                 content_sizer = wx.BoxSizer(wx.HORIZONTAL)
                 content_sizer2 = wx.BoxSizer(wx.VERTICAL)
@@ -590,6 +580,7 @@ class DLManagerDialog(wx.Dialog):
                     bmp = thread.thumb_bmp
                     thumb_bmp = wx.StaticBitmap(n, -1, bmp)
                     content_sizer.Add(thumb_bmp, 0)
+		    content_sizer.Add((10,0))
                 
                 title_sizer = wx.BoxSizer(wx.HORIZONTAL)
                 font = wx.Font(10, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
@@ -634,6 +625,16 @@ class DLManagerDialog(wx.Dialog):
                 
                 content_sizer.Add(content_sizer2, 1, wx.EXPAND)
                 n_sizer.Add(content_sizer, 0, wx.EXPAND)
+                
+                n_sizer.Add((5,8)) # a little bit of padding
+
+                 # download checkbox
+                check = wx.CheckBox(n, -1, "Download images from this thread")
+                if thread.is_source:
+                    check.SetValue(True)
+                check.Bind(wx.EVT_CHECKBOX, GoddamnButton(check, thread))
+                n_sizer.Add(check, 0)
+                n.thread_panel_check = check
                 
                 n_sizer.Add((5,8)) # a little bit of padding
                 
