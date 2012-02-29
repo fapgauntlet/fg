@@ -492,7 +492,7 @@ class DLManagerDialog(wx.Dialog):
                 max_get = 8
                 cur_get = []
                 while to_grab or cur_get:
-                    progress.Update(min(needed - 1,needed - len(to_grab)))
+                    progress.Update(min(needed-1, needed-len(to_grab)))
                     while len(cur_get) < max_get and to_grab:
                         thread, thumb_url = to_grab.pop(0)
                         thumb_path = os.path.join(thumb_cache, thumb_url.rsplit('/', 1)[-1])
@@ -781,7 +781,7 @@ class ImageManager(object):
         self.ani_counter = 0
         #self.show_count = []
         self.cur_image_path = None
-        self.image_history = []
+        self.hist = []
         self.image_data = {}
         self.scale_enabled = True
         self.folders = ['cache/']
@@ -911,7 +911,7 @@ class ImageManager(object):
         if self.cur_image_path is not None and imagepath is None:
             # only push image onto history if autoadvancing or forward key was
             # pressed
-            self.image_history.append(self.cur_image_path)
+            self.hist.append(self.cur_image_path)
 
         if imagepath is None:
             a = self.image_data.keys()
@@ -1671,11 +1671,15 @@ class MainFrame(wx.Frame):
                 self.key_state = True
                 self.OnFullScreen(not self.IsFullScreen())
             elif keycode in (wx.WXK_SPACE, wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN):
+                switched = None
                 self.key_state = True
                 # switch to the next image (or previous)
                 for i in self.image_manager.image_data:
                     if keycode == wx.WXK_LEFT:
-                        switched = self.image_manager.switch_image(self.image_manager.image_history.pop())
+                        img = None
+                        if len(self.image_manager.hist) > 0:
+                            prev = self.image_manager.hist.pop()
+                            switched = self.image_manager.switch_image(prev)
                     else:
                         switched = self.image_manager.switch_image()
 
