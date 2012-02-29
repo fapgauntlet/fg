@@ -1137,7 +1137,7 @@ class ImageManager(object):
             if self.paused:
                 # draw pause string
                 dc.SetFont(wx.Font(35, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-                tx, ty = 0, dch/2
+                tx, ty = 10, dch/2
                 dc.DrawText("Paused", tx+1, ty)
                 dc.DrawText("Paused", tx-1, ty)
                 dc.DrawText("Paused", tx, ty+1)
@@ -1200,9 +1200,10 @@ class ImageManager(object):
                         break
 
         else:
-            dc.SetFont(wx.Font(35, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+            dc.SetFont(wx.Font(25, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
             dc.SetTextForeground((200, 200, 200))
-            dc.DrawText("No images cached yet", 0, 0)
+            dc.DrawText("No images cached yet.", 10, dch/2 - 55)
+	    dc.DrawText("Right-click to get started.", 10, dch/2 + 5)
             for i in self.image_data:
                 switched = self.switch_image()
                 if switched:
