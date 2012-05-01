@@ -14,20 +14,33 @@ It's open source, written in python, so feel free to poke through it and do what
 fg.exe is simply provided for any windows users who can't be bothered to actually install python.
 
 
-RUNNING THE PROGRAM ------------------------------------------------------------
-Windows: Run gauntlet.exe
-Linux and Mac OS: Run fg.py. If that fails, running "python fg.py" on a terminal 
-should work. Make sure you have Python and wxPython installed!
+Running the Program
+===================
+Windows: Run fg.exe
+Linux and Mac OS: Run fg.py. Make sure you have Python and wxPython installed!
 
 
-KEYBOARD SHORTCUTS -------------------------------------------------------------
-PAUSE: left click
-RANDOM IMAGE: up / down / spacebar / right
-GO BACK AN IMAGE: left
+Controls
+========
+PAUSE: leftclick
+RANDOM IMAGE: uparrow / downarrow / spacebar / rightarrow
+GO BACK AN IMAGE: leftarrow
 FULLSCREEN: f / alt+return
 
 
-SELECTING IMAGES ---------------------------------------------------------------
+Image History
+=============
+fg keeps image history while it's running, in case you really liked a former
+image and wish to return to it.
+Pressing leftarrow will take you back an image. If there are no more images in
+the history stack, leftarrow will do nothing.
+Pressing rightarrow will take you forward an image. If there are no remaining
+images in the history stack, rightarrow will pick a random image.
+Image history is not persistent; it's not saved anywhere.
+
+
+Selecting Images
+================
 By default, no boards/threads are selected for the program to download from.
 
 To select threads to download from, go to the Download Manager in the context menu (right-click),
@@ -49,35 +62,28 @@ select Add Folder from the context menu (right-click),
 and any images in the folder will be added. (not recursive)
 
 
-BLACKLISTING IMAGES ------------------------------------------------------------
+Blacklisting Images
+===================
 If the program downloads an image you don't like,
 just select Blacklist This Image from the context menu (right-click),
 and the program won't select the image for viewing in the future.
 You can undo this by deleting the "blacklisted:true" line for the image in dispdata.cfg.
 
 
-SWITCHING TO THE NEXT IMAGE ----------------------------------------------------
-To skip ahead, just click the screen.
-If you blacklist the image, it'll skip ahead anyay.
-If you don't want to switch to the next image automatically, you can disable Auto Advance in the menu.
-
-
-RETURNING TO PREVIOUS IMAGES ---------------------------------------------------
-If you loved a previous image, press the left arrow key to go back through the
-history.
-
-
-STATISTICS ---------------------------------------------------------------------
+Statistics
+==========
 To see your statistics, select "I CAME" from the conetxt menu (right-click).
 Selecting "I CAME" doesn't actually reset the statistics,
 so don't worry about clicking it if you haven't actually cum (yet)
 
 
-FAP FRENZY ---------------------------------------------------------------------
+Fap Frenzy
+==========
 When this mode is enabled, the pace will increase a bit after each image is displayed.
 
 
-RENDERING OPTIONS---------------------------------------------------------------
+Rendering Options
+=================
 To toggle scaling, select Scale from the context menu. Enabled by default.
 
 To toggle fullscreen, select Fullscreen from the context menu or press F or
@@ -86,7 +92,8 @@ Alt+Return.
 When an animated image is scaled, it will render best in fullscreen mode.
 
 
-POSTING OPTIONS / DOWNLOAD MANAGER PARSING -------------------------------------
+Posting Options / Download Manager Parsing
+==========================================
 If the download manager sees that some of the text in the post comment
 for an image is in the format "(count)/(speed)/(force)", where:
 
@@ -96,7 +103,6 @@ for an image is in the format "(count)/(speed)/(force)", where:
 
 It will use that data for the image when it's displayed.
 Commas, fowardslashes, and backslashes count as separators.
-
 
 Decimal Number Speeds:
 If (speed) is a floating point number, or integer number (a number, possibly with a . part)
@@ -109,7 +115,6 @@ if you want to use a text speed in the "(count)/(speed)/(force)" line.
 Example:
 20, fast, light
 (2.5)
-
 
 Text Speeds:
 valid text speeds are:
@@ -125,7 +130,6 @@ valid text speeds are:
 Example:
 10, extremely slow, force of 1000 suns
 
-
 Automatic Speeds:
 Also if mention "speed" or "pace" in the speed field, and the image is animated, 
 the program will attempt to automatically determine the proper speed.
@@ -136,7 +140,8 @@ Example:
 80, same speed as gif, hard
 
 
-DISPDATA.CFG -------------------------------------------------------------------
+dispdata.cfg
+============
 display data (count, speed, force) can be directly edited in the "dispdata.cfg" file.
 for example, the contents might look like:
 
@@ -150,22 +155,26 @@ count:30
 speed:0.833
 
 
-FOLDERS.CFG --------------------------------------------------------------------
+folders.cfg
+===========
 folders can be added at startup by adding them to the "folder.cfg" file.
 
 
-SPAMFILTER.CFG -----------------------------------------------------------------
+spamfilter.cfg
+==============
 Spam filters can be added here.
 Each line should be a regular expression to match against the op post in a thread.
 If any text in the op post matches the regular expression,
 the thread will not appear in the Download Manager.
 
 
-TROUBLESHOOTING ----------------------------------------------------------------
+Troubleshooting
+===============
 If fg.exe says you're missing msvcp71.dll, there's a copy in msvcp71.zip.
 Extract it into the same directory along with everything else.
 
-If the program just displays the same image over and over, see the SELECTING IMAGES section.
+If the program just displays the same image over and over, see the 
+Selecting Images section.
 
 If you notice that a gif seems to be rendering more slowly than it should,
 there's a chance that the delaytime in the gif file is set incorrectly.
@@ -182,12 +191,12 @@ Notes about browser rendering delay (measured in fractions of a second):
 Safari:  less than 0.03 -> 0.03 (makes sense)
 Firefox: less than 0.02 -> 0.10 (make some sense)
 IE:      less than 0.06 -> 0.10 (make NO sense, 0.9 renders faster than 0.5)
-Opera:   less than 0.10 -> 0.10 (consistently slow, probably optimal for phones or whatever)
-Google Chrome is probably the same as Safari, as they both use WebKit for rendering
+Opera:   less than 0.10 -> 0.10 (consistently slow, probably optimal for phones
+or whatever)
+Google Chrome is probably the same as Safari, as they both use WebKit for 
+rendering
 
 
-
-
-Anyway, enjoy!
+Have you a fun for great good!
 
 - Zephyre & Anonymous
