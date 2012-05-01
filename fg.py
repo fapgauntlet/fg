@@ -1030,6 +1030,8 @@ class ImageManager(object):
         
         if imgdata.speed is None:
             if self.cur_animated:
+                if timelen == 0:
+                    timelen = 0.1
                 anim_rate = 1 / timelen
                 if timelen < 2.5:
                     rate = anim_rate
