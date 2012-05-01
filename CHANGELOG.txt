@@ -1,0 +1,21 @@
+2011-05-01 | dist_7
+===================
+- add keyboard shortcut for previous image
+- add keyboard shortcuts for fullscreen
+- first-time startup is no longer just an unhelpful blank quad
+- add left-click pause toggling
+- change the pulsing text's font & color
+- reduce the mouse cursor's linger time to 1 sec
+- console now tells the user when it starts and finishes downloading an image
+
+2012-02-28 | fg-7.1
+===================
+- improve drawn text
+- add new boards to the download manager
+- add window title
+
+2012-05-01 | fg-7.2
+===================
+- fix breakage with ^//* URLs
+- fix a potential division by zero
+
