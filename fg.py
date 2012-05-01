@@ -334,6 +334,12 @@ class ChanThread(object):
                     p['img_h'] = int(img[2].split('x')[1])
                     p['img_url'] = img[3]
                     p['img_thumburl'] = img[4]
+                    # 4chan now uses links that begin with '//';
+                    # this causes problems, so we prepend a scheme as necessary
+		    if p['img_url'].startswith('//'):
+                        p['img_url'] = 'http:' + p['img_url']
+                    if p['img_thumburl'].startswith('//'):
+                        p['img_thumburl'] = 'http:' + p['img_thumburl']
                 added += 1
             else:
                 not_added += 1
