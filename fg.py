@@ -788,6 +788,7 @@ class ImageManager(object):
         #self.show_count = []
         self.cur_image_path = None
         self.hist = []
+	self.histindex = 0
         self.imgdata = {}
         self.scale_enabled = True
         self.folders = ['cache/']
@@ -915,9 +916,12 @@ class ImageManager(object):
     
     def switchimg(self, imagepath=None):
         if self.cur_image_path is not None and imagepath is None:
-            # only push image onto history if autoadvancing or forward key was
-            # pressed
-            self.hist.append(self.cur_image_path)
+            # put current image in history
+	    if self.histindex >= len(self.hist):
+		self.hist.append(self.cur_image_path)
+            else:
+                self.hist[self.histindex] = self.cur_image_path
+            self.histindex += 1
 
         if imagepath is None:
             a = self.imgdata.keys()
@@ -1387,7 +1391,6 @@ class DownloadManager(threading.Thread):
                             
                             # even if we don't have a force or speed, we at least have a count
                             extra_data = detected_count, detected_speed, detected_force
-                        # locking would be useful here
                         imgurl = which['img_url']
                         print "Downloading " + imgurl + " ...",
                         got, mod_time = openurl(imgurl)
@@ -1682,8 +1685,9 @@ class MainFrame(wx.Frame):
                 for i in self.imgmanager.imgdata:
                     if keycode == wx.WXK_LEFT:
                         img = None
-                        if len(self.imgmanager.hist) > 0:
-                            prev = self.imgmanager.hist.pop()
+                        if self.imgmanager.histindex > 0:
+                            self.imgmanager.histindex -=  1
+                            prev = self.imgmanager.hist[self.imgmanager.histindex]
                             switched = self.imgmanager.switchimg(prev)
                     else:
                         switched = self.imgmanager.switchimg()
