@@ -1514,7 +1514,7 @@ class MainFrame(wx.Frame):
         self.menu.AppendSeparator()
         
         self.menu_exit_id = wx.NewId()
-        self.menu_exit = wx.MenuItem(self.menu, self.menu_exit_id, 'E&xit')
+        self.menu_exit = wx.MenuItem(self.menu, self.menu_exit_id, '&Exit')
         self.menu.AppendItem(self.menu_exit)
         
         if 0: # menubar is disabled since context menu is easier
