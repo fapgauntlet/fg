@@ -211,7 +211,7 @@ class ChanBoard(object):
         
         changed_threads = 0
         same_threads = 0
-        thread_area = re.search(r'<form name="delform" action="[^"]*" method=POST>(.*?)</form>', html, re.S).group(1)
+        thread_area = re.search(r'<form name="delform" id="delform" action="[^"]*" method="post">(.*?)</form>', html, re.S).group(1)
         
         threads = thread_sep_regex.split(thread_area)
         
