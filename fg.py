@@ -39,7 +39,7 @@ if os.path.exists('spamfilter.cfg'):
         raise
         pass
     finally:
-        if f is not None:
+        if f != None:
             f.close()
 
 
@@ -106,7 +106,7 @@ def openurl(url, timestamp=None):
     
     # create the http request, possibly with a timestamp
     request = urllib2.Request(url)
-    if timestamp is not None:
+    if timestamp != None:
         request.add_header('If-Modified-Since', timestamp)
     
     try:
@@ -168,7 +168,7 @@ class ChanBoard(object):
     
     def update_iter(self):
         start = 0
-        if self.pages is None:
+        if self.pages == None:
             changed_t, same_t = self.update_page(0)
             yield changed_t, same_t
             start = 1
@@ -194,10 +194,10 @@ class ChanBoard(object):
             u = self.url
         
         html, self.page_time[i] = openurl(u, self.page_time[i])
-        if html is None: # page hasn't been modified
+        if html == None: # page hasn't been modified
             return 0, None
         
-        if self.pages is None:
+        if self.pages == None:
             pagelen_regex = re.compile(r'(?:Previous.*<a href="[\d]*[^"]*">([\d]*)</a>)')
             match = pagelen_regex.search(html)
             try:
@@ -217,7 +217,7 @@ class ChanBoard(object):
         
         for t in threads:
             t_url = re.search(r'\[<a href="([^"]+)">Reply</a>\]', t)
-            if t_url is None: # junk at the end of the thread area regex
+            if t_url == None: # junk at the end of the thread area regex
                 continue
             t_url = t_url.group(1)
             headers = post_header_regex.finditer(t)
@@ -267,7 +267,7 @@ class ChanBoard(object):
         
     
     def get_thread(self, t_url):
-        if t_url not in self.threads or self.threads[t_url] is None:
+        if t_url not in self.threads or self.threads[t_url] == None:
             self.threads[t_url] = ChanThread(self.url+'/'+t_url)
 
 
@@ -298,7 +298,7 @@ class ChanThread(object):
     
     def update(self):
         html, self.page_time = openurl(self.url, self.page_time)
-        if html is None:
+        if html == None:
             return False
         t_area = re.search(r'<form name="delform" action="[^"]*" method=POST>(.*?)</form>', html, re.S).group(1)
         return self.update_from_text(t_area)
@@ -310,11 +310,11 @@ class ChanThread(object):
             if id not in self.posts: # only parse this post if we don't already have it
                 comment = self.comment_regex.search(p).group(1)
                 email = self.email_regex.search(p)
-                if email is not None:
+                if email != None:
                     email = email.group(1)
                 subject = self.subject_regex.search(p).group(1)
                 img = self.img_regex.search(p)
-                if img is not None:
+                if img != None:
                     img = img.groups()
                 p = self.posts[id] = {
                     'id':id,
@@ -325,7 +325,7 @@ class ChanThread(object):
                     'comment':comment,
                     'email':email,
                     'has_img':False}
-                if img is not None:
+                if img != None:
                     #print img
                     p['has_img'] = True
                     p['img_name'] = img[0]
@@ -536,7 +536,7 @@ class DLManagerDialog(wx.Dialog):
                                     f = open(thumb_path, 'wb')
                                     f.write(thumb_dat)
                                 finally:
-                                    if f is not None: f.close()
+                                    if f != None: f.close()
                                 # turn into bitmap
                                 stream = cStringIO.StringIO(thumb_dat)
                                 thread.thumb_bmp = wx.BitmapFromImage(wx.ImageFromStream(stream))
@@ -607,7 +607,7 @@ class DLManagerDialog(wx.Dialog):
                     op_name.SetForegroundColour((17,119,67))
                     title_sizer.Add(op_name)
                 '''
-                if op_post['trip'] is not None:
+                if op_post['trip'] != None:
                     op_name_text += ' '+html_to_text(op_post['trip']).decode("utf-8", "replace")
                 '''
                 content_sizer2.Add(title_sizer)
@@ -682,7 +682,7 @@ class DLManagerDialog(wx.Dialog):
         brokeout = False
         
         #'''
-        if b.pages is None:
+        if b.pages == None:
             #cur_pos = 0
             max_requests = 8
             cur_requests = []
@@ -691,10 +691,10 @@ class DLManagerDialog(wx.Dialog):
                 r_thread = ThreadedResult(b.update_page, i)
                 r_thread.start()
                 cur_requests.append((i, r_thread))
-            while b.pages is None or None in b.page_time:
+            while b.pages == None or None in b.page_time:
                 if None in b.page_time and len(cur_requests) < max_requests:
                     for i, v in enumerate(b.page_time):
-                        if v is None:
+                        if v == None:
                             # now check to make sure it isn't already being requested
                             doing_it = False
                             for req in cur_requests:
@@ -707,10 +707,10 @@ class DLManagerDialog(wx.Dialog):
                                 cur_requests.append((i, r_thread))
                 # remove completed requests
                 for req in cur_requests[:]:
-                    if req[1].result is not None:
+                    if req[1].result != None:
                         cur_requests.remove(req)
                 # make a progress dialog if we need one
-                if progress is None and b.pages is not None:
+                if progress == None and b.pages != None:
                     progress = wx.ProgressDialog(
                                     "Getting Board Data",
                                     'Getting list of threads from /'+label+'/',
@@ -724,8 +724,8 @@ class DLManagerDialog(wx.Dialog):
                                         wx.PD_AUTO_HIDE
                                 )
                 # allow breakout from the update
-                if progress is not None:
-                    keepgoing, skip = progress.Update(len(filter(lambda a: a is not None, b.page_time)))
+                if progress != None:
+                    keepgoing, skip = progress.Update(len(filter(lambda a: a != None, b.page_time)))
                     if not keepgoing:
                         brokeout = True
                         break
@@ -734,8 +734,8 @@ class DLManagerDialog(wx.Dialog):
             for i, v in enumerate(b.update_iter()):
                 changed_t, same_t = v
                 if ((changed_t and not same_t) or not changed_t) and None not in b.page_time:
-                    break # everything is current
-                if progress is None:
+                    break # everything == current
+                if progress == None:
                     progress = wx.ProgressDialog(
                                     "Getting Board Data",
                                     'Getting list of threads from /'+label+'/',
@@ -752,7 +752,7 @@ class DLManagerDialog(wx.Dialog):
                 if not keepgoing:
                     brokeout = True
                     break
-        if progress is not None:
+        if progress != None:
             progress.Destroy()
         if brokeout:
             return False
@@ -817,7 +817,7 @@ class ImageManager(object):
         self.switchimg()
         
     def load_folder_cfg(self, fn=None):
-        if fn is None:
+        if fn == None:
             fn = 'folders.cfg'
         try:
             f = None
@@ -828,11 +828,11 @@ class ImageManager(object):
         except:
             pass
         finally:
-            if f is not None:
+            if f != None:
                 f.close()
     
     def save_folder_cfg(self, fn=None):
-        if fn is None:
+        if fn == None:
             fn = 'folders.cfg'
         try:
             f = None
@@ -842,11 +842,11 @@ class ImageManager(object):
         except:
             pass
         finally:
-            if f is not None:
+            if f != None:
                 f.close()
     
     def load_display_data(self, fn=None):
-        if fn is None:
+        if fn == None:
             fn = 'dispdata.cfg'
         if os.path.exists(fn) and os.path.isfile(fn):
             f_got = None
@@ -857,9 +857,9 @@ class ImageManager(object):
             except:
                 pass
             finally:
-                if f is not None:
+                if f != None:
                     f.close()
-            if f_got is not None:
+            if f_got != None:
                 lines = f_got.splitlines()
                 pd = None
                 for line in lines:
@@ -867,34 +867,34 @@ class ImageManager(object):
                         head, tail = line.split(':', 1)
                         if head == 'file':
                             self.playdata[tail] = pd = {}
-                        elif pd is not None:
+                        elif pd != None:
                             if head == 'count' and tail.isdigit():
                                 pd['count'] = int(tail)
                             else:
                                 pd[head] = tail
     
     def save_display_data(self, fn=None):
-        if fn is None:
+        if fn == None:
             fn = 'dispdata.cfg'
         s = ''
         for imgdata in self.imgdata.values():
             bn = imgdata.basename
-            if imgdata.count is not None:
+            if imgdata.count != None:
                 if bn not in self.playdata:
                     self.playdata[bn] = {'count':imgdata.count}
                 else:
                     self.playdata[bn]['count'] = imgdata.count
-            if imgdata.speed is not None:
+            if imgdata.speed != None:
                 if bn not in self.playdata:
                     self.playdata[bn] = {'speed':imgdata.speed}
                 else:
                     self.playdata[bn]['speed'] = imgdata.speed
-            if imgdata.intensity is not None:
+            if imgdata.intensity != None:
                 if bn not in self.playdata:
                     self.playdata[bn] = {'intensity':imgdata.intensity}
                 else:
                     self.playdata[bn]['intensity'] = imgdata.intensity
-            if imgdata.blacklisted is not None:
+            if imgdata.blacklisted != None:
                 if bn not in self.playdata:
                     self.playdata[bn] = {'blacklisted':imgdata.blacklisted}
                 else:
@@ -911,11 +911,11 @@ class ImageManager(object):
         except:
             pass
         finally:
-            if f is not None:
+            if f != None:
                 f.close()
     
     def switchimg(self, imagepath=None):
-        if self.cur_image_path is not None and imagepath is None:
+        if self.cur_image_path != None and imagepath == None:
             # put current image in history
 	    if self.histindex >= len(self.hist):
 		self.hist.append(self.cur_image_path)
@@ -923,7 +923,7 @@ class ImageManager(object):
                 self.hist[self.histindex] = self.cur_image_path
             self.histindex += 1
 
-        if imagepath is None:
+        if imagepath == None:
             a = self.imgdata.keys()
             if a:
                 if 1: # semi-random
@@ -935,21 +935,21 @@ class ImageManager(object):
                     # try to avoid showing the same image twice in a row
                     if imagepath == self.cur_image_path:
                         for i in l:
-                            if i is not imagepath:
+                            if i != imagepath:
                                 switched = self.switchimg(i[0])
                                 if switched:
                                     return switched
                 else: # ordered
                     a.sort()
                     b = 0
-                    if self.cur_image_path is not None:
+                    if self.cur_image_path != None:
                         if self.cur_image_path in a:
                             b = (a.index(self.cur_image_path) + 1) % len(a)
                     imagepath = a[b]
             else:
                 return False
         
-        if self.imgdata[imagepath].blacklisted is not None:
+        if self.imgdata[imagepath].blacklisted != None:
             self.imgdata[imagepath].show_count += 50
             #del self.imgdata[imagepath]
             return False
@@ -961,7 +961,7 @@ class ImageManager(object):
             self.imgdata[imagepath].show_count += 50
             return False
         
-        # make sure the image data is stored
+        # make sure the image data == stored
         if imagepath not in self.imgdata:
             self.add_imgdata(imagepath)
         
@@ -1022,13 +1022,13 @@ class ImageManager(object):
         self.cur_image_path = imagepath
         self.cur_image_start_time = time.time()
         
-        if imgdata.intensity is not None:
+        if imgdata.intensity != None:
             self.cur_intensity = imgdata.intensity
         else:
             intense = intensities[randint(0,len(intensities)-1)]
             self.cur_intensity = intense
         
-        if imgdata.speed is None:
+        if imgdata.speed == None:
             if self.cur_animated:
                 if timelen == 0:
                     timelen = 0.1
@@ -1047,7 +1047,7 @@ class ImageManager(object):
                 rate = 1.0 # TODO fix this
         self.cur_rate = rate
         
-        if imgdata.count is None:
+        if imgdata.count == None:
             if rate < 1:
                 self.cur_count = randint(10,30)
             elif rate < 2:
@@ -1127,7 +1127,7 @@ class ImageManager(object):
                 if self.fullscreen:
                     if not self.fs_bitmap:
                         self.fs_bitmap = [None] * len(self.cur_bitmap)
-                    if self.fs_bitmap[self.cur_ani_index] is None:
+                    if self.fs_bitmap[self.cur_ani_index] == None:
                         current = wx.EmptyBitmap(w, h)
                         memory_dc = wx.MemoryDC()
                         memory_dc.SelectObject(current)
@@ -1159,7 +1159,7 @@ class ImageManager(object):
                 dc.DrawText("Paused", tx, ty)
 
                 # timing stuff
-                if self.last_pause_time is not None:
+                if self.last_pause_time != None:
                     self.cur_image_start_time += time.time() - self.last_pause_time
                 self.last_pause_time = time.time()
                 self.last_time = None
@@ -1167,7 +1167,7 @@ class ImageManager(object):
                 self.last_pause_time = None
         
                 # keep time count for "I came"
-                if self.last_time is None:
+                if self.last_time == None:
                     self.last_time = time.time()
                 else:
                     self.intensity_image_count[self.cur_intensity][2] += time.time() - self.last_time
@@ -1236,7 +1236,7 @@ class ImageManager(object):
                 imgdat.intensity = pd['intensity']
             if 'blacklisted' in pd:
                 imgdat.blacklisted = pd['blacklisted']
-        elif extra_data is not None:
+        elif extra_data != None:
             imgdat.count, imgdat.speed, imgdat.intensity = extra_data
     
     def add_folder_images(self, path):
@@ -1303,7 +1303,7 @@ class DownloadManager(threading.Thread):
                         extra_data = None
                         
                         meh = re.search(r'(\d+)[ \t]*([,\\/])(.*)', comment)
-                        if meh is not None:
+                        if meh != None:
                             force_doubles = 'medium', 'normal'
                             speed_map = {
                                 'extremely slow':0.25,
@@ -1334,13 +1334,13 @@ class DownloadManager(threading.Thread):
                                         speed_index = i
                                         break
                                 # if we already have a speed, we don't have to look further
-                                if speed_index is not None:
+                                if speed_index != None:
                                     break
                             
                             # find the speed (if auto-pacing didn't find it)
                             for i, v in enumerate(parts):
                                 # if we already have a speed, we don't have to look further
-                                if speed_index is not None:
+                                if speed_index != None:
                                     break
                                 # "fast", "slow", "medium", etc.
                                 if v.lower().strip() in speed_map:
@@ -1357,14 +1357,14 @@ class DownloadManager(threading.Thread):
                                         speed_index = i
                                         continue # got a named speed
                                 num = re.search(r'(\d+(?:.\d+)?)', v)
-                                if num is not None:
+                                if num != None:
                                     detected_speed = float(num.group(1))
                                     speed_index = i
                                     continue # got a float speed
                             
                             # if we got a speed, find the force
-                            if speed_index is not None:
-                                # if the speed is at the begining, use everything after it for the force
+                            if speed_index != None:
+                                # if the speed == at the begining, use everything after it for the force
                                 if speed_index == 0:
                                     detected_force = separator.join(parts[1:])
                                 # otherwise, grab everything in the middle
@@ -1387,7 +1387,7 @@ class DownloadManager(threading.Thread):
                             all_lines = comment.splitlines()
                             for l in all_lines:
                                 num = re.match(r'\s*\(\s*(\d+(?:.\d+)?)\s*\)', l)
-                                if num is not None:
+                                if num != None:
                                     detected_speed = float(num.group(1))
                                     break
                             
@@ -1398,7 +1398,7 @@ class DownloadManager(threading.Thread):
                         got, mod_time = openurl(imgurl)
                         image_base = imgurl.rsplit('/', 1)[-1]
                         img_cache_path = cache_dir + image_base
-                        if got != 404 and got is not None:
+                        if got != 404 and got != None:
                             f = open(img_cache_path, 'wb')
                             f.write(got)
                             f.close()
@@ -1658,7 +1658,7 @@ class MainFrame(wx.Frame):
     
     def OnMouseAny(self, event):
         # make the cursor visible and stop the current timer
-        if self.mouse_timer is not None:
+        if self.mouse_timer != None:
             self.mouse_timer.Stop()
             self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
         
