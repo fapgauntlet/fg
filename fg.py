@@ -1403,7 +1403,9 @@ class DownloadManager(threading.Thread):
                             f.write(got)
                             f.close()
                             self.new_cached.append((img_cache_path, extra_data))
-                            print "success"
+                            print "done"
+			    if not to_get:
+				    print "Finished downloading image list"
                     else:
                         need_refresh = True
                         sleep = 0.5
