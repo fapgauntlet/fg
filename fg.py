@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
-import wx
-import wx.animate
-import os, os.path
+import os
+import os.path
+import re
+import sys
+import threading
 import time
 import urllib2
-import re
-import threading
-import sys
+import wx
+import wx.animate
 from math import sin, cos, radians
 from random import randint
 
@@ -17,7 +18,6 @@ BUMPTIME_EMPTY_VAL = time.gmtime(0)
 #proxy = {'http':'127.0.0.1:8118'}
 proxy = {}
 
-
 board_names = [
 	'a', 'b', 'c', 'd', 'e', 'f', 'gif', 'h', 'hr', 'k', 'm', 'o', 'p', 'r', 
 	's', 't', 'u', 'v', 'vg', 'w', 'wg', 'i', 'ic','r9k','cm', 'y', '3', 'adv',
@@ -26,6 +26,17 @@ board_names = [
 	'trv', 'tv', 'vp', 'x'
 ]
 
+intensities = [
+	'extremely light',
+	'very light',
+	'light',
+	'loose',
+	'medium',
+	'tight',
+	'hard',
+	'very hard',
+	'extremely hard'
+]
 
 spam_filters = []
 if os.path.exists('spamfilter.cfg'):
@@ -46,32 +57,15 @@ if os.path.exists('spamfilter.cfg'):
 def we_are_frozen():
 	"""Returns whether we are frozen via py2exe.
 	This will affect how we find out where we are located."""
-
 	return hasattr(sys, "frozen")
 
 
 def module_path():
 	""" This will get us the program's directory,
 	even if we are frozen using py2exe"""
-
 	if we_are_frozen():
 		return os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding( )))
-
 	return os.path.dirname(unicode(__file__, sys.getfilesystemencoding( )))
-
-
-intensities = [
-	'extremely light',
-	'very light',
-	'light',
-	'loose',
-	'medium',
-	'tight',
-	'hard',
-	'very hard',
-	'extremely hard'
-]
-
 
 
 my_path = module_path()
@@ -83,8 +77,8 @@ thumb_cache = os.path.join(cache_dir, 'thumbs/')
 if not os.path.exists(cache_dir) or not os.path.isdir(cache_dir):
 	os.mkdir(cache_dir)
 
-
 g = []
+
 
 def html_to_text(html):
 	html = '"'.join(html.split('&quot;'))
@@ -133,12 +127,11 @@ class OpenUrlThreaded(threading.Thread):
 	def run(self):
 		self.result = openurl(self.url, self.timestamp)
 
-
-
 def random_page_thread(page_text):
 	# yeah this might look weird but regexes are weird
 	matches = [x for x in re.finditer(r'\[<a href="([^"]+)">Reply</a>\]', page_text)]
 	return matches[randint(0,len(g))%len(matches)].group(1)
+
 
 def get_thread_image_urls(thread_text):
 	r = r'x(\d+)[^)]*?\)</span><br><a href="(http://images.4chan.org[^"]*)" target=_blank><img src='
@@ -271,7 +264,6 @@ class ChanBoard(object):
 			self.threads[t_url] = ChanThread(self.url+'/'+t_url)
 
 
-
 class ChanThread(object):
 	# poster name, trip, time, id
 	post_header_regex = re.compile(r'>([^<]*)(?:</a>)?</span>(?: <span class="postertrip">([^<]*)</span>)?([^<]*)<span id="no[^"]*"><a href="[^"]*" class="quotejs">No.</a><a href="[^"]*" class="quotejs">([^<]*)</a>')
@@ -360,7 +352,6 @@ class ChanThread(object):
 			bump_time = re.sub(self.noweekday_regex, '', bump_time) # removes the weekday so locales won't fail
 			#print bump_time # for testing
 			return time.strptime(bump_time, '%m/%d/%y%H:%M') 
-
 
 
 class DLManagerDialog(wx.Dialog):
@@ -759,8 +750,6 @@ class DLManagerDialog(wx.Dialog):
 		return True
 
 
-
-
 class ImageData(object):
 	def __init__(self, path):
 		self.path = path # does not include path
@@ -773,7 +762,6 @@ class ImageData(object):
 		self.speed = None
 		self.intensity = None
 		self.blacklisted = None
-
 
 
 class ImageManager(object):
@@ -1256,9 +1244,6 @@ class ImageManager(object):
 					del self.imgdata[i]
 
 
-
-
-
 class DownloadManager(threading.Thread):
 	def __init__(self, parent):
 		threading.Thread.__init__(self)
@@ -1436,7 +1421,6 @@ class DownloadManager(threading.Thread):
 		result, self.new_cached = self.new_cached, []
 		self.new_cached_lock.release()
 		return result
-
 
 
 class MainFrame(wx.Frame):
@@ -1720,7 +1704,6 @@ class MainFrame(wx.Frame):
 		else:
 			self.refresh_timer.Restart(30) #16
 		self.imgmanager.showimg(self)
-		
 
 
 app = wx.App(redirect=False)
