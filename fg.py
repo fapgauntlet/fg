@@ -170,8 +170,9 @@ class ChanBoard(object):
 	
 	def update(self):
 		for changed_t, same_t in self.update_iter():
-			if ((changed_t and not same_t) or not changed_t) and None not in self.page_time:
-				break # everything is current
+			if not changed_t or (changed_t and not same_t):
+				if None not in self.page_time:
+					break # everything is current
 	
 	def update_page(self, i):
 		# thread separator
