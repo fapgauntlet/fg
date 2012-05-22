@@ -129,18 +129,6 @@ class OpenUrlThreaded(threading.Thread):
 	def run(self):
 		self.result = openurl(self.url, self.timestamp)
 
-'''
-def random_page_thread(page_text):
-	# yeah this might look weird but regexes are weird
-	matches = [x for x in re.finditer(r'\[<a href="([^"]+)">Reply</a>\]', page_text)]
-	return matches[randint(0,len(g))%len(matches)].group(1)
-
-
-def get_thread_image_urls(thread_text):
-	r = r'x(\d+)[^)]*?\)</span><br><a href="(http://images.4chan.org[^"]*)" target=_blank><img src='
-	matches = [x for x in re.finditer(r, thread_text)]
-	return [m.groups() for m in matches]
-'''
 
 class ThreadedResult(threading.Thread):
 	def __init__(self, call, *a, **k):
@@ -344,7 +332,6 @@ class ChanThread(object):
 					post['img_url'] = 'http:' + post['img_url']
 				if post['img_thumburl'].startswith('//'):
 					post['img_thumburl'] = 'http:' + post['img_thumburl']
-			print post
 			added += 1
 		return added, not_added
 	
