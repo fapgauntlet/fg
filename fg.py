@@ -192,7 +192,6 @@ class ChanBoard(object):
 		threads = self.soup.findAll('div', 'thread')
 		for t in threads:
 			url = t.find('a', 'replylink')['href'] # thread's url
-			print 'thread url '+url
 			headers = t.findAll('div', 'postContainer')
 			for h in headers:
 				h = h.find('div', 'desktop') # avoid the mobile stuff
@@ -201,14 +200,11 @@ class ChanBoard(object):
 				if poster_trip != None:
 					poster_trip = poster_trip.get_text()
 				t_time = h.find('span', 'dateTime').get_text()
-				print 'post time '+t_time
 				id = h.find('span', 'postNum').findAll('a')
 				id = id[1].get_text() # number from 'Quote this post' link
-				print 'post id '+id
 				h = h.parent # switch back to full post
 
 			if url not in self.threads:
-				print "don't already have thread "+url
 				self.threads[url] = ChanThread(self.url+'/'+url)
 				self.threads[url].bump_time = t_time
 				self.threads[url].need_update = True
@@ -220,7 +216,7 @@ class ChanBoard(object):
 			else:
 				same_threads += 1
 			try:
-				added, not_added = self.threads[url].update_from_text(unicode(t))
+				added, not_added = self.threads[url].update_from_soup(t)
 				if added == 1 and not_added == 0 and len(self.threads[url].posts.items()) == 1: # thread only has op post
 					self.threads[url].need_update = False
 				if added and not_added == 1: # thread has more replies than are visible
@@ -274,21 +270,18 @@ class ChanThread(object):
 			return False
 		self.soup = bs4.BeautifulSoup(html)
 		t_area = self.soup.find('div', 'board')
-		print t_area.string
-		return self.update_from_text(t_area)
+		return self.update_from_soup(t_area)
 	
-	def update_from_text(self, t_area):
-		print 'update_from_text'
+	def update_from_soup(self, t_area):
+		tsoup = t_area
 		added, not_added = 0, 0
-		self.soup = bs4.BeautifulSoup(t_area)
-		for ps in self.soup.findAll('div', 'postContainer'):
+		for ps in tsoup.findAll('div', 'postContainer'):
 			ps = ps.find('div', 'desktop') # avoid the mobile stuff
 			name = ps.find('span', 'name').get_text()
 			trip = ps.find('span', 'trip')
 			if trip != None:
 				trip = trip.get_text()
 			time = ps.find('span', 'dateTime').get_text()
-			print time
 			id = ps.find('span', 'postNum').findAll('a')
 			id = id[1].get_text() # number from 'Quote this post' link
 			ps = ps.parent # switch back to full post
@@ -296,9 +289,7 @@ class ChanThread(object):
 			# don't add this post if we already have it
 			if id in self.posts:
 				not_added += 1
-				print 'have post '+id
 				continue
-			print "don't already have post "+id
 			comment = ps.find('blockquote', 'postMessage').get_text()
 			email = "dongs"
 			subject = ps.find('span', 'subject').get_text()
@@ -339,8 +330,12 @@ class ChanThread(object):
 		return result
 	
 	def get_bump_time(self):
-		bump_post = self.sorted_posts()[-1:]
-		bump_time = bump_post['time'].strip()
+		try:
+			bump_post = self.sorted_posts().pop()
+			bump_time = bump_post['time'].strip()
+		except:
+			print self.posts
+			print '----------------------====------'
 		if bump_time == '':
 		   # print BUMPTIME_EMPTY_VAL # for testing
 			return BUMPTIME_EMPTY_VAL
@@ -581,7 +576,7 @@ class DLManagerDialog(wx.Dialog):
 				font = wx.Font(10, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
 				if op_post['subject']:
 					# subject
-					t = html_to_text(op_post['subject']).decode("utf-8", "replace")
+					t = html_to_text(op_post['subject']) #.decode("utf-8", "replace")
 					subject = wx.StaticText(n, -1, t)
 					subject.SetFont(font)
 					subject.SetForegroundColour((204,17,5))
@@ -590,20 +585,18 @@ class DLManagerDialog(wx.Dialog):
 				
 				if op_post['name']:
 					# poster name
-					op_name_text = html_to_text(' '+op_post['name']).decode("utf-8", "replace")
+					op_name_text = html_to_text(' '+op_post['name']) #.decode("utf-8", "replace")
 					op_name = wx.StaticText(n, -1, op_name_text)
 					op_name.SetFont(font)
 					op_name.SetForegroundColour((17,119,67))
 					title_sizer.Add(op_name)
-				'''
 				if op_post['trip'] != None:
-					op_name_text += ' '+html_to_text(op_post['trip']).decode("utf-8", "replace")
-				'''
+					op_name_text += ' '+html_to_text(op_post['trip']) #.decode("utf-8", "replace")
 				content_sizer2.Add(title_sizer)
 				
 				
 				try: # 240, 224, 214 # 255,255,238
-					t = html_to_text(op_post['comment']).decode("utf-8", "replace")
+					t = html_to_text(op_post['comment']) #.decode("utf-8", "replace")
 					text = wx.TextCtrl(n, -1, t, style=wx.TE_READONLY|wx.TE_AUTO_URL|wx.TE_MULTILINE|wx.TE_RICH|wx.NO_BORDER)
 					text.SetForegroundColour((128,0,0))
 					if thread.ignore:
@@ -616,7 +609,6 @@ class DLManagerDialog(wx.Dialog):
 					content_sizer2.Add(text, 0, wx.EXPAND)
 				except:
 					print 'can\'t decode unicode text for post:\n',t
-					raise
 				
 				content_sizer.Add(content_sizer2, 1, wx.EXPAND)
 				n_sizer.Add(content_sizer, 0, wx.EXPAND)
@@ -1386,8 +1378,6 @@ class DownloadManager(threading.Thread):
 							f.close()
 							self.new_cached.append((img_cache_path, extra_data))
 							print "done"
-							if not to_get:
-									print "Finished downloading image list"
 					else:
 						need_refresh = True
 						sleep = 0.5
