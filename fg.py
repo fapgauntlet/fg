@@ -78,8 +78,6 @@ thumb_cache = os.path.join(cache_dir, 'thumbs/')
 if not os.path.exists(cache_dir) or not os.path.isdir(cache_dir):
 	os.mkdir(cache_dir)
 
-g = []
-
 
 def html_to_text(html):
 	html = '"'.join(html.split('&quot;'))
