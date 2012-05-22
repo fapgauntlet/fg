@@ -198,7 +198,7 @@ class ChanBoard(object):
 		if self.npages == None:
 			pls = self.soup.find('div', 'pagelist desktop')
 			pls = pls.find('div', 'pages')
-			lastpage = pls.findAll('a').pop().string
+			lastpage = pls.findAll('a')[-1].string
 			print lastpage+' pages on board'
 			self.npages = int(lastpage)
 			while len(self.page_time) < int(lastpage):
@@ -347,8 +347,7 @@ class ChanThread(object):
 		return result
 	
 	def get_bump_time(self):
-		#bump_post = self.sorted_posts()[-1:]
-		bump_post = self.sorted_posts().pop()
+		bump_post = self.sorted_posts()[-1]
 		bump_time = bump_post['time'].strip()
 		if bump_time == '':
 		   # print BUMPTIME_EMPTY_VAL # for testing
@@ -370,7 +369,7 @@ class DLManagerDialog(wx.Dialog):
 		self.sizer_buttons = sizer_buttons = wx.BoxSizer(wx.HORIZONTAL)
 
 		self.boardlist = getboardlist()	
-		self.source_box = source_box = wx.ListBox(self, -1, size=(100,-1), choices=self.boardlist)
+		self.source_box = source_box = wx.ListBox(self, -1, size=(60,-1), choices=self.boardlist)
 		#source_box.Bind(wx.EVT_CHECKLISTBOX, self.SourceCheckListBox)
 		source_box.Bind(wx.EVT_LISTBOX, self.SourceListBox)
 		
@@ -448,108 +447,27 @@ class DLManagerDialog(wx.Dialog):
 				self.thread.ignore = self.check.IsChecked()
 		
 		import cStringIO
-		if label in self.source_box.GetStrings() and label in self.parent.board_downloaders:
-			b = self.parent.board_downloaders[label]
-			for n in self.panel_threads: n.Destroy()
-			self.panel_threads = []
-			self.sizer_thread.Clear()
-			self.thread_panel.Show(False)
-			cflip = 0
-			sorted_threads = b.threads.items()
-			sorted_threads.sort(key=lambda i: i[1].get_bump_time())
-			sorted_threads.reverse()
-			sorted_threads.sort(key=lambda i: i[1].ignore) # push ignored threads to end of list
-			if filter(lambda a: not hasattr(a, 'thumb_bmp'), sorted_threads):
-				# figure out which to get
-				to_grab = []
-				for i, v in enumerate(sorted_threads):
-					t_key, thread = v
-					op_post = thread.sorted_posts()[0]
-					
-					# filter out thumbnails for spam posts
-					skip_thread = False
-					for spam_filter in spam_filters:
-						if re.search(spam_filter, op_post['comment']):
-							skip_thread = True
-							break
-					if skip_thread:
-						continue
-					
-					if 'img_thumburl' not in op_post:
-						pass
-					elif not hasattr(thread, 'thumb_bmp'):
-						op_thumb_url = op_post['img_thumburl']
-						to_grab.append((thread, op_thumb_url))
-				
-				# get the ones we need
-				progress = wx.ProgressDialog(
-					"Loading Thumbnails",
-					'Loading thumbnails for /'+label+'/',
-					maximum=len(to_grab),
-					parent=self,
-					style=wx.PD_CAN_ABORT
-						| wx.PD_ELAPSED_TIME
-						| wx.PD_ESTIMATED_TIME
-						| wx.PD_REMAINING_TIME
-				)
-				#for i, v in enumerate(to_grab):
-				needed = len(to_grab)
-				max_get = 8
-				cur_get = []
-				while to_grab or cur_get:
-					progress.Update(min(needed-1, needed-len(to_grab)))
-					while len(cur_get) < max_get and to_grab:
-						thread, thumb_url = to_grab.pop(0)
-						thumb_path = os.path.join(thumb_cache, thumb_url.rsplit('/', 1)[-1])
-						if os.path.isfile(thumb_path):
-							f = open(thumb_path, 'rb')
-							thumb_dat = f.read()
-							f.close()
-							stream = cStringIO.StringIO(thumb_dat)
-							thread.thumb_bmp = wx.BitmapFromImage(wx.ImageFromStream(stream))
-						else:
-							getter = OpenUrlThreaded(thumb_url)
-							getter.start() # begin the thread
-							cur_get.append((thread, getter))
-					for bleh in cur_get[:]:
-						thread, getter = bleh
-						if getter.result:
-							thumb_dat, mod_time = getter.result
-							
-							# restart if the connection was lost
-							if thumb_dat == 504:
-								op_post = thread.sorted_posts()[0]
-								thumb_url = op_post['img_thumburl']
-								getter = OpenUrlThreaded(thumb_url)
-								getter.start() # begin the thread
-								cur_get.append((thread, getter))
-							
-							# only grab the file if it still exists
-							elif thumb_dat != 404:
-								# write to thumb cache
-								op_post = thread.sorted_posts()[0]
-								thumb_url = op_post['img_thumburl']
-								thumb_path = os.path.join(thumb_cache, thumb_url.rsplit('/', 1)[-1])
-								try:
-									f = None
-									f = open(thumb_path, 'wb')
-									f.write(thumb_dat)
-								finally:
-									if f != None: f.close()
-								# turn into bitmap
-								stream = cStringIO.StringIO(thumb_dat)
-								thread.thumb_bmp = wx.BitmapFromImage(wx.ImageFromStream(stream))
-							
-							cur_get.remove(bleh)
-					time.sleep(0.25)
-				progress.Destroy()
-			
+		if (label not in self.source_box.GetStrings()) and (label not in self.parent.board_downloaders):
+			print '????'
+			return
+		b = self.parent.board_downloaders[label]
+		for n in self.panel_threads: n.Destroy()
+		self.panel_threads = []
+		self.sizer_thread.Clear()
+		self.thread_panel.Show(False)
+		cflip = 0
+		sorted_threads = b.threads.items()
+		sorted_threads.sort(key=lambda i: i[1].get_bump_time())
+		sorted_threads.reverse()
+		sorted_threads.sort(key=lambda i: i[1].ignore) # push ignored threads to end of list
+		if filter(lambda a: not hasattr(a, 'thumb_bmp'), sorted_threads):
+			# figure out which to get
+			to_grab = []
 			for i, v in enumerate(sorted_threads):
 				t_key, thread = v
-				# basic setup
 				op_post = thread.sorted_posts()[0]
 				
-				# filter out all that goddamn SPAM
+				# filter out thumbnails for spam posts
 				skip_thread = False
 				for spam_filter in spam_filters:
 					if re.search(spam_filter, op_post['comment']):
@@ -558,115 +476,195 @@ class DLManagerDialog(wx.Dialog):
 				if skip_thread:
 					continue
 				
-				# create a panel for this thread
-				n = wx.Panel(self.thread_panel)
-				n.actual_thread_obj = thread
-				n_sizer = wx.BoxSizer(wx.VERTICAL)
-				# force scroll focusing
-				n.force_scrolling = wx.Panel(n, -1, size=(0,0))
-				n_sizer.Add(n.force_scrolling)
-				class cunt(object):
-					def __init__(self, bleh):
-						self.bleh = bleh
-					def __call__(self, e):
-						if isinstance(self.bleh.FindFocus(), (wx.TextCtrl, wx.ListBox)):
-							self.bleh.SetFocus()
-				n.Bind(wx.EVT_ENTER_WINDOW, cunt(n.force_scrolling))
-				
-				n_sizer.Add((5,10)) # a little bit of padding
-
-				# content sizer
-				content_sizer = wx.BoxSizer(wx.HORIZONTAL)
-				content_sizer2 = wx.BoxSizer(wx.VERTICAL)
-				
-				# thumb display
-				#op_thumb_url = op_post['img_thumburl']
-				if hasattr(thread, 'thumb_bmp'):
-					bmp = thread.thumb_bmp
-					thumb_bmp = wx.StaticBitmap(n, -1, bmp)
-					content_sizer.Add(thumb_bmp, 0)
-					content_sizer.Add((10,0))
-				
-				title_sizer = wx.BoxSizer(wx.HORIZONTAL)
-				font = wx.Font(10, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
-				if op_post['subject']:
-					# subject
-					t = html_to_text(op_post['subject']) #.decode("utf-8", "replace")
-					subject = wx.StaticText(n, -1, t)
-					subject.SetFont(font)
-					subject.SetForegroundColour((204,17,5))
-					#content_sizer2.Add(subject)
-					title_sizer.Add(subject)
-				
-				if op_post['name']:
-					# poster name
-					op_name_text = html_to_text(' '+op_post['name']) #.decode("utf-8", "replace")
-					op_name = wx.StaticText(n, -1, op_name_text)
-					op_name.SetFont(font)
-					op_name.SetForegroundColour((17,119,67))
-					title_sizer.Add(op_name)
-				if op_post['trip'] != None:
-					op_name_text += ' '+html_to_text(op_post['trip']) #.decode("utf-8", "replace")
-				content_sizer2.Add(title_sizer)
-				
-				
-				try: # 240, 224, 214 # 255,255,238
-					t = html_to_text(op_post['comment']) #.decode("utf-8", "replace")
-					text = wx.TextCtrl(n, -1, t, style=wx.TE_READONLY|wx.TE_AUTO_URL|wx.TE_MULTILINE|wx.TE_RICH|wx.NO_BORDER)
-					text.SetForegroundColour((128,0,0))
-					if thread.ignore:
-						text.SetBackgroundColour((111,111,128+(32<<cflip)))
-					elif cflip:
-						text.SetBackgroundColour((240,224,214))
+				if 'img_thumburl' not in op_post:
+					pass
+				elif not hasattr(thread, 'thumb_bmp'):
+					op_thumb_url = op_post['img_thumburl']
+					to_grab.append((thread, op_thumb_url))
+			
+			# get the ones we need
+			progress = wx.ProgressDialog(
+				"Loading Thumbnails",
+				'Loading thumbnails for /'+label+'/',
+				maximum=len(to_grab),
+				parent=self,
+				style=wx.PD_CAN_ABORT
+					| wx.PD_ELAPSED_TIME
+					| wx.PD_ESTIMATED_TIME
+					| wx.PD_REMAINING_TIME
+			)
+			#for i, v in enumerate(to_grab):
+			needed = len(to_grab)
+			max_get = 8
+			cur_get = []
+			while to_grab or cur_get:
+				progress.Update(min(needed-1, needed-len(to_grab)))
+				while len(cur_get) < max_get and to_grab:
+					thread, thumb_url = to_grab.pop(0)
+					thumb_path = os.path.join(thumb_cache, thumb_url.rsplit('/', 1)[-1])
+					if os.path.isfile(thumb_path):
+						f = open(thumb_path, 'rb')
+						thumb_dat = f.read()
+						f.close()
+						stream = cStringIO.StringIO(thumb_dat)
+						thread.thumb_bmp = wx.BitmapFromImage(wx.ImageFromStream(stream))
 					else:
-						text.SetBackgroundColour((255,255,238))
-					#text = wx.StaticText(n, -1, t_key+'\n'+t)
-					content_sizer2.Add(text, 0, wx.EXPAND)
-				except:
-					print 'can\'t decode unicode text for post:\n',t
-				
-				content_sizer.Add(content_sizer2, 1, wx.EXPAND)
-				n_sizer.Add(content_sizer, 0, wx.EXPAND)
-				
-				n_sizer.Add((5,8)) # a little bit of padding
+						getter = OpenUrlThreaded(thumb_url)
+						getter.start() # begin the thread
+						cur_get.append((thread, getter))
+				for bleh in cur_get[:]:
+					thread, getter = bleh
+					if getter.result:
+						thumb_dat, mod_time = getter.result
+						
+						# restart if the connection was lost
+						if thumb_dat == 504:
+							op_post = thread.sorted_posts()[0]
+							thumb_url = op_post['img_thumburl']
+							getter = OpenUrlThreaded(thumb_url)
+							getter.start() # begin the thread
+							cur_get.append((thread, getter))
+						
+						# only grab the file if it still exists
+						elif thumb_dat != 404:
+							# write to thumb cache
+							op_post = thread.sorted_posts()[0]
+							thumb_url = op_post['img_thumburl']
+							thumb_path = os.path.join(thumb_cache, thumb_url.rsplit('/', 1)[-1])
+							try:
+								f = None
+								f = open(thumb_path, 'wb')
+								f.write(thumb_dat)
+							finally:
+								if f != None: f.close()
+							# turn into bitmap
+							stream = cStringIO.StringIO(thumb_dat)
+							thread.thumb_bmp = wx.BitmapFromImage(wx.ImageFromStream(stream))
+						
+						cur_get.remove(bleh)
+				time.sleep(0.25)
+			progress.Destroy()
+		
+		for i, v in enumerate(sorted_threads):
+			t_key, thread = v
+			# basic setup
+			op_post = thread.sorted_posts()[0]
+			
+			# filter out all that goddamn SPAM
+			skip_thread = False
+			for spam_filter in spam_filters:
+				if re.search(spam_filter, op_post['comment']):
+					skip_thread = True
+					break
+			if skip_thread:
+				continue
+			
+			# create a panel for this thread
+			n = wx.Panel(self.thread_panel)
+			n.actual_thread_obj = thread
+			n_sizer = wx.BoxSizer(wx.VERTICAL)
+			# force scroll focusing
+			n.force_scrolling = wx.Panel(n, -1, size=(0,0))
+			n_sizer.Add(n.force_scrolling)
+			class cunt(object):
+				def __init__(self, bleh):
+					self.bleh = bleh
+				def __call__(self, e):
+					if isinstance(self.bleh.FindFocus(), (wx.TextCtrl, wx.ListBox)):
+						self.bleh.SetFocus()
+			n.Bind(wx.EVT_ENTER_WINDOW, cunt(n.force_scrolling))
+			
+			n_sizer.Add((5,10)) # a little bit of padding
 
-				 # download checkbox
-				check = wx.CheckBox(n, -1, "Download images from this thread")
-				if thread.is_source:
-					check.SetValue(True)
-				check.Bind(wx.EVT_CHECKBOX, GoddamnButton(check, thread))
-				n_sizer.Add(check, 0)
-				n.thread_panel_check = check
-				
-				n_sizer.Add((5,8)) # a little bit of padding
-				
-				# ignore checkbox
-				ignore = wx.CheckBox(n, -1, "Ignore this thread (push to end of list next time this board is opened, and won't be affected by Select All)")
+			# content sizer
+			content_sizer = wx.BoxSizer(wx.HORIZONTAL)
+			content_sizer2 = wx.BoxSizer(wx.VERTICAL)
+			
+			# thumb display
+			#op_thumb_url = op_post['img_thumburl']
+			if hasattr(thread, 'thumb_bmp'):
+				bmp = thread.thumb_bmp
+				thumb_bmp = wx.StaticBitmap(n, -1, bmp)
+				content_sizer.Add(thumb_bmp, 0)
+				content_sizer.Add((10,0))
+			
+			title_sizer = wx.BoxSizer(wx.HORIZONTAL)
+			font = wx.Font(10, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+			if op_post['subject']:
+				# subject
+				t = html_to_text(op_post['subject']) #.decode("utf-8", "replace")
+				subject = wx.StaticText(n, -1, t)
+				subject.SetFont(font)
+				subject.SetForegroundColour((204,17,5))
+				#content_sizer2.Add(subject)
+				title_sizer.Add(subject)
+			
+			if op_post['name']:
+				# poster name
+				op_name_text = html_to_text(' '+op_post['name']) #.decode("utf-8", "replace")
+				op_name = wx.StaticText(n, -1, op_name_text)
+				op_name.SetFont(font)
+				op_name.SetForegroundColour((17,119,67))
+				title_sizer.Add(op_name)
+			if op_post['trip'] != None:
+				op_name_text += ' '+html_to_text(op_post['trip']) #.decode("utf-8", "replace")
+			content_sizer2.Add(title_sizer)
+			
+			try: # 240, 224, 214 # 255,255,238
+				t = html_to_text(op_post['comment']) #.decode("utf-8", "replace")
+				text = wx.TextCtrl(n, -1, t, style=wx.TE_READONLY|wx.TE_AUTO_URL|wx.TE_MULTILINE|wx.TE_RICH|wx.NO_BORDER)
+				text.SetForegroundColour((128,0,0))
 				if thread.ignore:
-					ignore.SetValue(True)
-				ignore.Bind(wx.EVT_CHECKBOX, GoddamnIgnoreButton(ignore, thread))
-				n_sizer.Add(ignore, 0)
-				n.thread_panel_ignore = ignore
-				
-				n_sizer.Add((5,10)) # a little bit of padding
-				
-				if thread.ignore:
-					n.SetBackgroundColour((111,111,128+(32<<cflip)))
+					text.SetBackgroundColour((111,111,128+(32<<cflip)))
 				elif cflip:
-					n.SetBackgroundColour((240,224,214))
+					text.SetBackgroundColour((240,224,214))
 				else:
-					n.SetBackgroundColour((255,255,238))
-				cflip^=1
-				n.SetSizer(n_sizer)
-				self.sizer_thread.Add(n, 0, wx.EXPAND)
-				self.panel_threads.append(n)
-			self.thread_panel.SetSizer(self.sizer_thread)
-			self.thread_panel.Layout()
-			self.thread_panel.SetupScrolling()
-			self.thread_panel.Show(True)
-			self.thread_panel.Layout()
-		else:
-			print '???'
+					text.SetBackgroundColour((255,255,238))
+				#text = wx.StaticText(n, -1, t_key+'\n'+t)
+				content_sizer2.Add(text, 0, wx.EXPAND)
+			except:
+				print 'can\'t decode unicode text for post:\n',t
+			
+			content_sizer.Add(content_sizer2, 1, wx.EXPAND)
+			n_sizer.Add(content_sizer, 0, wx.EXPAND)
+			
+			n_sizer.Add((5,8)) # a little bit of padding
+
+			 # download checkbox
+			check = wx.CheckBox(n, -1, "Download images from this thread")
+			if thread.is_source:
+				check.SetValue(True)
+			check.Bind(wx.EVT_CHECKBOX, GoddamnButton(check, thread))
+			n_sizer.Add(check, 0)
+			n.thread_panel_check = check
+			
+			n_sizer.Add((5,8)) # a little bit of padding
+			
+			# ignore checkbox
+			ignore = wx.CheckBox(n, -1, "Ignore this thread (push to end of list next time this board is opened, and won't be affected by Select All)")
+			if thread.ignore:
+				ignore.SetValue(True)
+			ignore.Bind(wx.EVT_CHECKBOX, GoddamnIgnoreButton(ignore, thread))
+			n_sizer.Add(ignore, 0)
+			n.thread_panel_ignore = ignore
+			
+			n_sizer.Add((5,10)) # a little bit of padding
+			
+			if thread.ignore:
+				n.SetBackgroundColour((111,111,128+(32<<cflip)))
+			elif cflip:
+				n.SetBackgroundColour((240,224,214))
+			else:
+				n.SetBackgroundColour((255,255,238))
+			cflip^=1
+			n.SetSizer(n_sizer)
+			self.sizer_thread.Add(n, 0, wx.EXPAND)
+			self.panel_threads.append(n)
+		self.thread_panel.SetSizer(self.sizer_thread)
+		self.thread_panel.Layout()
+		self.thread_panel.SetupScrolling()
+		self.thread_panel.Show(True)
+		self.thread_panel.Layout()
 	
 	def UpdateBoard(self, label):
 		# add the board if it doesn't already exist
@@ -690,17 +688,18 @@ class DLManagerDialog(wx.Dialog):
 			while b.npages == None or None in b.page_time:
 				if None in b.page_time and len(cur_requests) < max_requests:
 					for i, v in enumerate(b.page_time):
-						if v == None:
-							# now check to make sure it isn't already being requested
-							doing_it = False
-							for req in cur_requests:
-								if req[0] == i:
-									doing_it = True
-									break
-							if not doing_it:
-								r_thread = ThreadedResult(b.update_page, i)
-								r_thread.start()
-								cur_requests.append((i, r_thread))
+						if v != None:
+							continue
+						# now check to make sure it isn't already being requested
+						doing_it = False
+						for req in cur_requests:
+							if req[0] == i:
+								doing_it = True
+								break
+						if not doing_it:
+							r_thread = ThreadedResult(b.update_page, i)
+							r_thread.start()
+							cur_requests.append((i, r_thread))
 				# remove completed requests
 				for req in cur_requests[:]:
 					if req[1].result != None:
@@ -732,16 +731,16 @@ class DLManagerDialog(wx.Dialog):
 					break # everything == current
 				if progress == None:
 					progress = wx.ProgressDialog(
-									"Getting Board Data",
-									'Getting list of threads from /'+label+'/',
-									maximum=b.npages,
-									parent=self,
-									style=
-										wx.PD_CAN_ABORT | 
-										wx.PD_ELAPSED_TIME | 
-										wx.PD_ESTIMATED_TIME | 
-										wx.PD_REMAINING_TIME |
-										wx.PD_AUTO_HIDE
+						"Getting Board Data",
+						'Getting list of threads from /'+label+'/',
+						maximum=b.npages,
+						parent=self,
+						style=
+							wx.PD_CAN_ABORT | 
+							wx.PD_ELAPSED_TIME | 
+							wx.PD_ESTIMATED_TIME | 
+							wx.PD_REMAINING_TIME |
+							wx.PD_AUTO_HIDE
 								)
 				keepgoing, skip = progress.Update(i)
 				if not keepgoing:
