@@ -19,7 +19,7 @@ BUMPTIME_EMPTY_VAL = time.gmtime(0)
 #proxy = {'http':'127.0.0.1:8118'}
 proxy = {}
 
-board_names = [
+boardlistfallback = [
 	'a', 'b', 'c', 'd', 'e', 'f', 'gif', 'h', 'hr', 'k', 'm', 'o', 'p', 'r', 
 	's', 't', 'u', 'v', 'vg', 'w', 'wg', 'i', 'ic','r9k','cm', 'y', '3', 'adv',
 	'an', 'cgl', 'ck', 'co', 'diy', 'fa', 'fit', 'hc', 'hm', 'int', 'jp', 
@@ -38,6 +38,23 @@ intensities = [
 	'very hard',
 	'extremely hard'
 ]
+
+
+def getboardlist():
+	boardlist = []
+	try:
+		html, none = openurl('http://www.4chan.org/framesnav?disclaimer=accept')
+		bs = bs4.BeautifulSoup(html)
+		img = bs.find('div', id='img').ul.findAll('li')
+		for link in img:
+			bname = re.search('/[^/]*?/$', link.a['href'])
+			boardlist.append(bname.group(0))
+		boardlist.sort()
+	except:
+		print 'Trouble getting boardlist, using fallback'
+		boardlist = boardlistfallback
+	return boardlist
+
 
 spam_filters = []
 if os.path.exists('spamfilter.cfg'):
@@ -330,12 +347,9 @@ class ChanThread(object):
 		return result
 	
 	def get_bump_time(self):
-		try:
-			bump_post = self.sorted_posts().pop()
-			bump_time = bump_post['time'].strip()
-		except:
-			print self.posts
-			print '----------------------====------'
+		#bump_post = self.sorted_posts()[-1:]
+		bump_post = self.sorted_posts().pop()
+		bump_time = bump_post['time'].strip()
 		if bump_time == '':
 		   # print BUMPTIME_EMPTY_VAL # for testing
 			return BUMPTIME_EMPTY_VAL
@@ -354,8 +368,9 @@ class DLManagerDialog(wx.Dialog):
 		self.sizer_all = sizer_all = wx.BoxSizer(wx.VERTICAL)
 		self.sizer_main = sizer_main = wx.BoxSizer(wx.HORIZONTAL)
 		self.sizer_buttons = sizer_buttons = wx.BoxSizer(wx.HORIZONTAL)
-		
-		self.source_box = source_box = wx.ListBox(self, -1, size=(100,-1), choices=board_names)
+
+		self.boardlist = getboardlist()	
+		self.source_box = source_box = wx.ListBox(self, -1, size=(100,-1), choices=self.boardlist)
 		#source_box.Bind(wx.EVT_CHECKLISTBOX, self.SourceCheckListBox)
 		source_box.Bind(wx.EVT_LISTBOX, self.SourceListBox)
 		
