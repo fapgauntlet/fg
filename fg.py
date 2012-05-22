@@ -11,7 +11,7 @@ import urllib2
 import wx
 import wx.animate
 from math import sin, cos, radians
-from random import randint
+from random import randint, random
 
 # change below to gime.gmtime to bring threads with no bump time to the front (rather than to the back)
 BUMPTIME_EMPTY_VAL = time.gmtime(0)
@@ -801,6 +801,8 @@ class ImageManager(object):
 		# load up defaults
 		self.load_display_data()
 		self.load_folder_cfg()
+
+		self.pulsecolour = (1.0, 0.0, 1.0)
 		
 		# test
 		for g in self.folders:
@@ -1176,9 +1178,9 @@ class ImageManager(object):
 			
 			# text stuff
 			if 1:
-				c = 127-cos(radians(pos*360))*128
+				x = 127-cos(radians(pos*360))*128
 			else:
-				c = (pos > 0.5) * 255
+				x = (pos > 0.5) * 255
 				
 			dc.SetFont(wx.Font(35, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
 			
@@ -1187,13 +1189,14 @@ class ImageManager(object):
 			tw, th = dc.GetTextExtent(self.text)
 			tx, ty = (dcw-tw)/2, 0
 			
-			inv_c = 0 #(255-c)/2
-			dc.SetTextForeground((inv_c, inv_c, inv_c))
+			inv_x = (255-x)/2
+			dc.SetTextForeground((inv_x, inv_x, inv_x))
 			dc.DrawText(self.text, tx+1, ty)
 			dc.DrawText(self.text, tx-1, ty)
 			dc.DrawText(self.text, tx, ty+1)
 			dc.DrawText(self.text, tx, ty-1)
-			dc.SetTextForeground((c, 0, c))
+			c = self.pulsecolour
+			dc.SetTextForeground((c[0]*x, c[1]*x, c[2]*x))
 			dc.DrawText(self.text, tx, ty)#, dch-th)# 0,0)#
 			
 			# auto advancement
@@ -1212,6 +1215,9 @@ class ImageManager(object):
 				switched = self.switchimg()
 				if switched:
 					break
+	
+	def changepulsecolour(self):
+		self.pulsecolour = (random(), random(), random())
 
 	def add_imgdata(self, path, extra_data=None):
 		if path not in self.imgdata:
@@ -1667,6 +1673,8 @@ class MainFrame(wx.Frame):
 				# toggle fullscreen
 				self.key_state = True
 				self.OnFullScreen(not self.IsFullScreen())
+			elif keycode == ord('R'):
+				self.imgmanager.changepulsecolour()
 			elif keycode in (wx.WXK_SPACE, wx.WXK_LEFT, wx.WXK_RIGHT, wx.WXK_UP, wx.WXK_DOWN):
 				switched = None
 				self.key_state = True
@@ -1683,6 +1691,9 @@ class MainFrame(wx.Frame):
 
 					if switched:
 						break
+			elif keycode == ord('Q'):
+				self.Close()
+				exit()	
 	
 	def OnKeyUp(self, event):
 		self.key_state = False
