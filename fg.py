@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import bs4
 import os
 import os.path
 import re
@@ -94,6 +95,7 @@ def html_to_text(html):
 
 
 def openurl(url, timestamp=None):
+	print 'openurl '+url
 	# fix for urllib2 proxy bug
 	proxy_support = urllib2.ProxyHandler(proxy)
 	opener = urllib2.build_opener(proxy_support)
@@ -127,6 +129,7 @@ class OpenUrlThreaded(threading.Thread):
 	def run(self):
 		self.result = openurl(self.url, self.timestamp)
 
+'''
 def random_page_thread(page_text):
 	# yeah this might look weird but regexes are weird
 	matches = [x for x in re.finditer(r'\[<a href="([^"]+)">Reply</a>\]', page_text)]
@@ -137,7 +140,7 @@ def get_thread_image_urls(thread_text):
 	r = r'x(\d+)[^)]*?\)</span><br><a href="(http://images.4chan.org[^"]*)" target=_blank><img src='
 	matches = [x for x in re.finditer(r, thread_text)]
 	return [m.groups() for m in matches]
-
+'''
 
 class ThreadedResult(threading.Thread):
 	def __init__(self, call, *a, **k):
@@ -154,18 +157,19 @@ class ThreadedResult(threading.Thread):
 class ChanBoard(object):
 	def __init__(self, which):
 		self.url = 'http://boards.4chan.org/'+which
-		self.pages = None
-		#self.page_time = [None]*self.pages
+		self.npages = None
+		#self.page_time = [None]*self.npages
 		self.page_time = []
 		self.threads = {}
+		self.soup = None # beautiful
 	
 	def update_iter(self):
 		start = 0
-		if self.pages == None:
+		if self.npages == None:
 			changed_t, same_t = self.update_page(0)
 			yield changed_t, same_t
 			start = 1
-		for i in xrange(start, self.pages):
+		for i in xrange(start, self.npages):
 			yield self.update_page(i)
 	
 	def update(self):
@@ -175,10 +179,6 @@ class ChanBoard(object):
 					break # everything is current
 	
 	def update_page(self, i):
-		# thread separator
-		thread_sep_regex = re.compile(r'<hr(?:[ /][^>]*?)?>')
-		# poster name, trip, time, id
-		post_header_regex = re.compile(r'>([^<]*)(?:</a>)?</span>(?: <span class="postertrip">([^<]*)</span>)?([^<]*)<span id="no[^"]*"><a href="[^"]*" class="quotejs">No.</a><a href="[^"]*" class="quotejs">([^<]*)</a>')
 		i = int(i)
 		while len(self.page_time) <= i:
 			self.page_time.append(None)
@@ -190,54 +190,58 @@ class ChanBoard(object):
 		html, self.page_time[i] = openurl(u, self.page_time[i])
 		if html == None: # page hasn't been modified
 			return 0, None
+		self.soup = bs4.BeautifulSoup(html)
 		
-		if self.pages == None:
-			pagelen_regex = re.compile(r'(?:Previous.*<a href="[\d]*[^"]*">([\d]*)</a>)')
-			match = pagelen_regex.search(html)
-			try:
-				p = int(match.group(1)) + 1
-			except AttributeError:
-				print html
-			self.pages = p
-			
-			while len(self.page_time) < p:
+		if self.npages == None:
+			pls = self.soup.find('div', 'pagelist desktop')
+			pls = pls.find('div', 'pages')
+			lastpage = pls.findAll('a').pop().string
+			print lastpage+' pages on board'
+			self.npages = int(lastpage)
+			while len(self.page_time) < int(lastpage):
 				self.page_time.append(None)
 		
 		changed_threads = 0
 		same_threads = 0
-		thread_area = re.search(r'<form name="delform" id="delform" action="[^"]*" method="post">(.*?)</form>', html, re.S).group(1)
-		
-		threads = thread_sep_regex.split(thread_area)
-		
+		threads = self.soup.findAll('div', 'thread')
 		for t in threads:
-			t_url = re.search(r'\[<a href="([^"]+)">Reply</a>\]', t)
-			if t_url == None: # junk at the end of the thread area regex
-				continue
-			t_url = t_url.group(1)
-			headers = post_header_regex.finditer(t)
+			url = t.find('a', 'replylink')['href'] # thread's url
+			print 'thread url '+url
+			headers = t.findAll('div', 'postContainer')
 			for h in headers:
-				poster_name, poster_trip, t_time, post_id = h.groups()
-			#print t_url
-			if t_url not in self.threads:
-				self.threads[t_url] = ChanThread(self.url+'/'+t_url)
-				self.threads[t_url].bump_time = t_time
-				self.threads[t_url].need_update = True
+				h = h.find('div', 'desktop') # avoid the mobile stuff
+				poster_name = h.find('span', 'name').get_text()
+				poster_trip = h.find('span', 'trip')
+				if poster_trip != None:
+					poster_trip = poster_trip.get_text()
+				t_time = h.find('span', 'dateTime').get_text()
+				print 'post time '+t_time
+				id = h.find('span', 'postNum').findAll('a')
+				id = id[1].get_text() # number from 'Quote this post' link
+				print 'post id '+id
+				h = h.parent # switch back to full post
+
+			if url not in self.threads:
+				print "don't already have thread "+url
+				self.threads[url] = ChanThread(self.url+'/'+url)
+				self.threads[url].bump_time = t_time
+				self.threads[url].need_update = True
 				changed_threads += 1
-			elif t_time != self.threads[t_url].bump_time:
+			elif t_time != self.threads[url].bump_time:
 				#self.threads[t_url].update()
-				self.threads[t_url].bump_time = t_time
+				self.threads[url].bump_time = t_time
 				changed_threads += 1
 			else:
 				same_threads += 1
 			try:
-				added, not_added = self.threads[t_url].update_from_text(t)
-				if added == 1 and not_added == 0 and len(self.threads[t_url].posts.items()) == 1: # thread only has op post
-					self.threads[t_url].need_update = False
+				added, not_added = self.threads[url].update_from_text(unicode(t))
+				if added == 1 and not_added == 0 and len(self.threads[url].posts.items()) == 1: # thread only has op post
+					self.threads[url].need_update = False
 				if added and not_added == 1: # thread has more replies than are visible
-					self.threads[t_url].need_update = True
+					self.threads[url].need_update = True
 			except:
 				import traceback
-				print 'bad thread:',self.url+'/'+t_url
+				print 'bad thread:',self.url+'/'+url
 				traceback.print_exc()
 				pass
 		
@@ -266,18 +270,6 @@ class ChanBoard(object):
 
 
 class ChanThread(object):
-	# poster name, trip, time, id
-	post_header_regex = re.compile(r'>([^<]*)(?:</a>)?</span>(?: <span class="postertrip">([^<]*)</span>)?([^<]*)<span id="no[^"]*"><a href="[^"]*" class="quotejs">No.</a><a href="[^"]*" class="quotejs">([^<]*)</a>')
-	# image name, size, res, url, thumburl
-	img_regex = re.compile(r'<span class="filesize">[^<]*<a href="[^"]*" target="_blank">([^<]*)</a>-\(([^,]*), ([^),]*).*?\)</span><br><a href="([^"]*)" target=_blank><img src=(\S*) [^>]*></a>')
-	# post subject
-	subject_regex = re.compile(r'<span class="[replyfil]{4,5}title">([^<]*)</span>')
-	# poster email
-	email_regex = re.compile(r'<a href="mailto:([^"]*)" class="linkmail">')
-	# poster comment
-	comment_regex = re.compile(r'<blockquote>(.*?)</blockquote>', re.S)
-	# double dash (thread post splitter)
-	doubledash_regex = re.compile(r'<td nowrap class="doubledash">&gt;&gt;</td>')
 	# no week day time hack regex
 	noweekday_regex = re.compile(r'\([a-zA-Z]{3,3}?\)')
 	
@@ -288,54 +280,72 @@ class ChanThread(object):
 		self.is_source = False
 		self.ignore = False
 		self.need_update = False
-	
+		self.soup = None # beautiful
+
 	def update(self):
 		html, self.page_time = openurl(self.url, self.page_time)
 		if html == None:
 			return False
-		t_area = re.search(r'<form name="delform" action="[^"]*" method=POST>(.*?)</form>', html, re.S).group(1)
+		self.soup = bs4.BeautifulSoup(html)
+		t_area = self.soup.find('div', 'board')
+		print t_area.string
 		return self.update_from_text(t_area)
 	
 	def update_from_text(self, t_area):
+		print 'update_from_text'
 		added, not_added = 0, 0
-		for p in self.doubledash_regex.split(t_area):
-			name, trip, time, id = self.post_header_regex.search(p).groups()
-			if id not in self.posts: # only parse this post if we don't already have it
-				comment = self.comment_regex.search(p).group(1)
-				email = self.email_regex.search(p)
-				if email != None:
-					email = email.group(1)
-				subject = self.subject_regex.search(p).group(1)
-				img = self.img_regex.search(p)
-				if img != None:
-					img = img.groups()
-				p = self.posts[id] = {
-					'id':id,
-					'subject':subject,
-					'name':name,
-					'trip':trip,
-					'time':time,
-					'comment':comment,
-					'email':email,
-					'has_img':False}
-				if img != None:
-					#print img
-					p['has_img'] = True
-					p['img_name'] = img[0]
-					p['img_size'] = img[1]
-					p['img_w'] = int(img[2].split('x')[0])
-					p['img_h'] = int(img[2].split('x')[1])
-					p['img_url'] = img[3]
-					p['img_thumburl'] = img[4]
-					# 4chan now uses links that begin with '//';
-					# this causes problems, so we prepend a scheme as necessary
-					if p['img_url'].startswith('//'):
-						p['img_url'] = 'http:' + p['img_url']
-					if p['img_thumburl'].startswith('//'):
-						p['img_thumburl'] = 'http:' + p['img_thumburl']
-				added += 1
-			else:
+		self.soup = bs4.BeautifulSoup(t_area)
+		for ps in self.soup.findAll('div', 'postContainer'):
+			ps = ps.find('div', 'desktop') # avoid the mobile stuff
+			name = ps.find('span', 'name').get_text()
+			trip = ps.find('span', 'trip')
+			if trip != None:
+				trip = trip.get_text()
+			time = ps.find('span', 'dateTime').get_text()
+			print time
+			id = ps.find('span', 'postNum').findAll('a')
+			id = id[1].get_text() # number from 'Quote this post' link
+			ps = ps.parent # switch back to full post
+
+			# don't add this post if we already have it
+			if id in self.posts:
 				not_added += 1
+				print 'have post '+id
+				continue
+			print "don't already have post "+id
+			comment = ps.find('blockquote', 'postMessage').get_text()
+			email = "dongs"
+			subject = ps.find('span', 'subject').get_text()
+			img = ps.find('div', 'file')
+			post = self.posts[id] = {
+				'id': id,
+				'subject': subject,
+				'name': name,
+				'trip': trip,
+				'time': time,
+				'comment': comment,
+				'email': email,
+				'has_img': False
+			}
+			if img != None:
+				ft = img.find('a', 'fileThumb')
+				fi = img.div.find('span') # fileInfo
+				post['has_img'] = True
+				post['img_name'] = fi.find('span')['title']
+				matches = re.search('\((.*?), (.*?),', fi.get_text()).groups()
+				post['img_size'] = matches[0]
+				post['img_w'] = int(matches[1].split('x')[0])
+				post['img_h'] = int(matches[1].split('x')[1])
+				post['img_url'] = fi.a['href']
+				post['img_thumburl'] = ft.img['src']
+				# 4chan now uses links that begin with '//';
+				# this causes problems, so we prepend a scheme as necessary
+				if post['img_url'].startswith('//'):
+					post['img_url'] = 'http:' + post['img_url']
+				if post['img_thumburl'].startswith('//'):
+					post['img_thumburl'] = 'http:' + post['img_thumburl']
+			print post
+			added += 1
 		return added, not_added
 	
 	def sorted_posts(self):
@@ -344,7 +354,7 @@ class ChanThread(object):
 		return result
 	
 	def get_bump_time(self):
-		bump_post = self.sorted_posts()[-1]
+		bump_post = self.sorted_posts()[-1:]
 		bump_time = bump_post['time'].strip()
 		if bump_time == '':
 		   # print BUMPTIME_EMPTY_VAL # for testing
@@ -455,7 +465,6 @@ class DLManagerDialog(wx.Dialog):
 			sorted_threads.reverse()
 			sorted_threads.sort(key=lambda i: i[1].ignore) # push ignored threads to end of list
 			if filter(lambda a: not hasattr(a, 'thumb_bmp'), sorted_threads):
-				
 				# figure out which to get
 				to_grab = []
 				for i, v in enumerate(sorted_threads):
@@ -479,12 +488,15 @@ class DLManagerDialog(wx.Dialog):
 				
 				# get the ones we need
 				progress = wx.ProgressDialog(
-								"Loading Thumbnails",
-								'Loading thumbnails for /'+label+'/',
-								maximum=len(to_grab),
-								parent=self,
-								style=wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME | wx.PD_ESTIMATED_TIME | wx.PD_REMAINING_TIME
-							)
+					"Loading Thumbnails",
+					'Loading thumbnails for /'+label+'/',
+					maximum=len(to_grab),
+					parent=self,
+					style=wx.PD_CAN_ABORT
+						| wx.PD_ELAPSED_TIME
+						| wx.PD_ESTIMATED_TIME
+						| wx.PD_REMAINING_TIME
+				)
 				#for i, v in enumerate(to_grab):
 				needed = len(to_grab)
 				max_get = 8
@@ -536,7 +548,7 @@ class DLManagerDialog(wx.Dialog):
 							cur_get.remove(bleh)
 					time.sleep(0.25)
 				progress.Destroy()
-					
+			
 			for i, v in enumerate(sorted_threads):
 				t_key, thread = v
 				# basic setup
@@ -558,13 +570,13 @@ class DLManagerDialog(wx.Dialog):
 				# force scroll focusing
 				n.force_scrolling = wx.Panel(n, -1, size=(0,0))
 				n_sizer.Add(n.force_scrolling)
-				class damnit(object):
+				class cunt(object):
 					def __init__(self, bleh):
 						self.bleh = bleh
 					def __call__(self, e):
 						if isinstance(self.bleh.FindFocus(), (wx.TextCtrl, wx.ListBox)):
 							self.bleh.SetFocus()
-				n.Bind(wx.EVT_ENTER_WINDOW, damnit(n.force_scrolling))
+				n.Bind(wx.EVT_ENTER_WINDOW, cunt(n.force_scrolling))
 				
 				n_sizer.Add((5,10)) # a little bit of padding
 
@@ -674,7 +686,7 @@ class DLManagerDialog(wx.Dialog):
 		brokeout = False
 		
 		#'''
-		if b.pages == None:
+		if b.npages == None:
 			#cur_pos = 0
 			max_requests = 8
 			cur_requests = []
@@ -683,7 +695,7 @@ class DLManagerDialog(wx.Dialog):
 				r_thread = ThreadedResult(b.update_page, i)
 				r_thread.start()
 				cur_requests.append((i, r_thread))
-			while b.pages == None or None in b.page_time:
+			while b.npages == None or None in b.page_time:
 				if None in b.page_time and len(cur_requests) < max_requests:
 					for i, v in enumerate(b.page_time):
 						if v == None:
@@ -702,19 +714,18 @@ class DLManagerDialog(wx.Dialog):
 					if req[1].result != None:
 						cur_requests.remove(req)
 				# make a progress dialog if we need one
-				if progress == None and b.pages != None:
+				if progress == None and b.npages != None:
 					progress = wx.ProgressDialog(
-									"Getting Board Data",
-									'Getting list of threads from /'+label+'/',
-									maximum=b.pages,
-									parent=self,
-									style=
-										wx.PD_CAN_ABORT | 
-										wx.PD_ELAPSED_TIME | 
-										wx.PD_ESTIMATED_TIME | 
-										wx.PD_REMAINING_TIME |
-										wx.PD_AUTO_HIDE
-								)
+						"Getting Board Data",
+						'Getting list of threads from /'+label+'/',
+						maximum=b.npages,
+						parent=self,
+						style=wx.PD_CAN_ABORT | 
+							wx.PD_ELAPSED_TIME | 
+							wx.PD_ESTIMATED_TIME | 
+							wx.PD_REMAINING_TIME |
+							wx.PD_AUTO_HIDE
+					)
 				# allow breakout from the update
 				if progress != None:
 					keepgoing, skip = progress.Update(len(filter(lambda a: a != None, b.page_time)))
@@ -731,7 +742,7 @@ class DLManagerDialog(wx.Dialog):
 					progress = wx.ProgressDialog(
 									"Getting Board Data",
 									'Getting list of threads from /'+label+'/',
-									maximum=b.pages,
+									maximum=b.npages,
 									parent=self,
 									style=
 										wx.PD_CAN_ABORT | 
@@ -1396,12 +1407,12 @@ class DownloadManager(threading.Thread):
 						need_refresh = True
 						sleep = 0.5
 				last_refresh = time.time() - self.last_full_refresh
-				if not need_refresh and last_refresh > self.max_refresh_delay:
+				if not need_refresh and (last_refresh > self.max_refresh_delay):
 					sleep = 0.0
 					for b in self.parent.board_downloaders.values():
 						b.update()
 					self.last_full_refresh = time.time()
-				if need_refresh and last_refresh > self.min_refresh_delay:
+				if need_refresh and (last_refresh > self.min_refresh_delay):
 					sleep = 0.0
 					for b in self.parent.board_downloaders.values():
 						b.update()
@@ -1411,7 +1422,7 @@ class DownloadManager(threading.Thread):
 				exit()
 			except:
 				import traceback
-				print 'Error in Download Management Thread, attempting to recover'
+				print 'Error in download management thread, attempting to recover'
 				traceback.print_exc()
 				sleep = 5.0
 			if sleep:
