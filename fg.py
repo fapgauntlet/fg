@@ -43,15 +43,15 @@ intensities = [
 def getboardlist():
 	boardlist = []
 	try:
-		html, none = openurl('http://www.4chan.org/framesnav?disclaimer=accept')
+		html, none = openurl('http://4chan.org/framesnav?disclaimer=accept')
 		bs = bs4.BeautifulSoup(html)
 		img = bs.find('div', id='img').ul.findAll('li')
 		for link in img:
-			bname = re.search('/[^/]*?/$', link.a['href'])
-			boardlist.append(bname.group(0))
+			bname = re.search('/([^/]*?)/$', link.a['href'])
+			boardlist.append(bname.group(1))
 		boardlist.sort()
 	except:
-		print 'Trouble getting boardlist, using fallback'
+		print 'Trouble getting board list; using fallback'
 		boardlist = boardlistfallback
 	return boardlist
 
@@ -1414,7 +1414,7 @@ class DownloadManager(threading.Thread):
 					self.last_full_refresh = time.time()
 
 			except wx.PyDeadObjectError:
-				exit()
+				sys.exit()
 			except:
 				import traceback
 				print 'Error in download management thread, attempting to recover'
@@ -1628,7 +1628,7 @@ class MainFrame(wx.Frame):
 	
 	def OnExit(self, event):
 		self.Close()
-		exit()
+		sys.exit()
 	
 	def OnLeftDown(self, event):
 		if self.imgmanager.paused:
@@ -1693,7 +1693,7 @@ class MainFrame(wx.Frame):
 						break
 			elif keycode == ord('Q'):
 				self.Close()
-				exit()	
+				sys.exit()	
 	
 	def OnKeyUp(self, event):
 		self.key_state = False
