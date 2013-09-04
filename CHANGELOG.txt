@@ -19,11 +19,19 @@
 - fix breakage with ^//* URLs
 - fix a potential division by zero
 
-2012-05-22 | fg-8alpha
+2012-05-22 | fg-8
 ======================
 - fix breakage with htmlnew
-- overhaul html parsing
+- modify html parsing
 - add ability to retrieve the list of boards rather than using hardcoded list
 - add keyboard shortcut for changing pulse colour (r key)
 - add keyboard shortcut for quit (q key)
+
+2013-08-21 | fg-9 (anon's fg-7.3)
+===================
+- rewrite download manager to use 4chan JSON API
+- fix crash in Linux when trying to load GIF animations (they don't work, though)
+- fix download manager loading first board before loading the actually selected one
+- fix rendering at least in Linux
+- fix blinking text, now properly using color values between 0-255
 
