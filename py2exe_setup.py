@@ -18,17 +18,17 @@ data_files = [
     'CHANGELOG.txt',
 ]
 setup(console=[{
-		'script': 'fg.py',
-		'icon_resources':[(1, 'excellent.ico')],
-	}],
-	data_files=data_files,
-	options={
-		"py2exe": {
-			"bundle_files": 1,
-			"optimize": 2,
-			"dist_dir": "fg-8alpha2",
-			"compressed": True,
-		}
-	},
+        'script': 'fg.py',
+        'icon_resources':[(1, 'excellent.ico')],
+    }],
+    data_files=data_files,
+    options={
+        "py2exe": {
+            "bundle_files": 1,
+            "optimize": 2,
+            "dist_dir": "fg-8alpha2",
+            "compressed": True,
+        }
+    },
 )
 
