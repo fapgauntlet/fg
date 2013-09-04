@@ -6,7 +6,10 @@ from distutils.core import setup
 import py2exe
 
 data_files = [
-    'MSVCP90.dll',
+    'msvcp90.dll',
+    'msvcr90.dll',
+    'gdiplus.dll',
+    'msvcm90.dll',
     'fg.py',
     'setgifdelay.py',
     'py2exe_setup.py',
@@ -14,15 +17,18 @@ data_files = [
     'BUGS.txt',
     'CHANGELOG.txt',
 ]
-setup(
-        options={
-            "py2exe": {
-                "bundle_files": 2,
-                "optimize": 2,
-                "dist_dir": "fg-8",
-                "compressed": True,
-            }
-        },
-        console=['fg.py'], data_files=data_files
+setup(console=[{
+		'script': 'fg.py',
+		'icon_resources':[(1, 'excellent.ico')],
+	}],
+	data_files=data_files,
+	options={
+		"py2exe": {
+			"bundle_files": 1,
+			"optimize": 2,
+			"dist_dir": "fg-8alpha2",
+			"compressed": True,
+		}
+	},
 )
 

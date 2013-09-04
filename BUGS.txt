@@ -1,5 +1,4 @@
-- clipping near the bottom of the download manager page -- some wx bounds exceeded?
 - window does not refresh much, if at all, with Python 2.7.3 & wxpython 2.8.12 (Linux)
-- page ordering is screwed up following 7.2's URL fix; I don't recall this being an issue before
+- performance is hideous with very large images -- scale down?
 - readme is huge
 

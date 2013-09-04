@@ -17,15 +17,18 @@ fg.exe is simply provided for any windows users who can't be bothered to actuall
 Running the Program
 ===================
 Windows: Run fg.exe
-Linux and Mac OS: Run fg.py. Make sure you have Python and wxPython installed!
+Linux, Mac OS X, etc: Run fg.py. Make sure you have Python, wxPython, and
+beautifulsoup4 installed!
 
 
 Controls
 ========
-PAUSE: leftclick
-RANDOM IMAGE: uparrow / downarrow / spacebar / rightarrow
-GO BACK AN IMAGE: leftarrow
-FULLSCREEN: f / alt+return
+Pause: leftclick
+Random image: uparrow / downarrow / spacebar / rightarrow
+Go back an image: leftarrow
+Fullscreen: f / alt+return
+Change pulse colour: r
+Quit: q
 
 
 Image History
@@ -34,8 +37,6 @@ fg keeps image history while it's running, in case you really liked a former
 image and wish to return to it.
 Pressing leftarrow will take you back an image. If there are no more images in
 the history stack, leftarrow will do nothing.
-Pressing rightarrow will take you forward an image. If there are no remaining
-images in the history stack, rightarrow will pick a random image.
 Image history is not persistent; it's not saved anywhere.
 
 

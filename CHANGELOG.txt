@@ -19,3 +19,11 @@
 - fix breakage with ^//* URLs
 - fix a potential division by zero
 
+2012-05-22 | fg-8alpha
+======================
+- fix breakage with htmlnew
+- overhaul html parsing
+- add ability to retrieve the list of boards rather than using hardcoded list
+- add keyboard shortcut for changing pulse colour (r key)
+- add keyboard shortcut for quit (q key)
+

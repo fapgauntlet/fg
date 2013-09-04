@@ -323,15 +323,21 @@ class ChanThread(object):
 			}
 			if img != None:
 				ft = img.find('a', 'fileThumb')
-				fi = img.div.find('span') # fileInfo
+				if (ft == None) or (ft.img['alt'] == 'File deleted.'):
+					# never try to add deleted files, for 
+					# that will cause exceptions later
+					print id+' appears to have a deleted file; skipping'
+					added += 1
+					continue
+				fi = img.find('div', 'fileInfo').find('span', 'fileText')
 				post['has_img'] = True
+				post['img_url'] = fi.a['href']
+				post['img_thumburl'] = ft.img['src']
 				post['img_name'] = fi.find('span')['title']
 				matches = re.search('\((.*?), (.*?),', fi.get_text()).groups()
 				post['img_size'] = matches[0]
 				post['img_w'] = int(matches[1].split('x')[0])
 				post['img_h'] = int(matches[1].split('x')[1])
-				post['img_url'] = fi.a['href']
-				post['img_thumburl'] = ft.img['src']
 				# 4chan now uses links that begin with '//';
 				# this causes problems, so we prepend a scheme as necessary
 				if post['img_url'].startswith('//'):
