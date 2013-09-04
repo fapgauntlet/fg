@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import bs4
+import json
 import os
 import os.path
 import re
@@ -42,34 +42,14 @@ intensities = [
 
 def getboardlist():
     boardlist = []
-    try:
-        html, none = openurl('http://4chan.org/framesnav?disclaimer=accept')
-        bs = bs4.BeautifulSoup(html)
-        img = bs.find('div', id='img').ul.findAll('li')
-        for link in img:
-            bname = re.search('/([^/]*?)/$', link.a['href'])
-            boardlist.append(bname.group(1))
-        boardlist.sort()
-    except:
-        print 'Trouble getting board list; using fallback'
+    r, _ = openurl('http://api.4chan.org/boards.json')
+    if r == None:
+        print 'Trouble getting board list; using built-in list'
         boardlist = boardlistfallback
+    else:
+        for b in r["boards"]:
+            boardlist.append(b["board"])
     return boardlist
-
-
-spam_filters = []
-if os.path.exists('spamfilter.cfg'):
-    try:
-        f = None
-        f = open('spamfilter.cfg', 'r')
-        f_read = f.read()
-        for line in f_read.splitlines():
-            spam_filters.append(line)
-    except:
-        raise
-        pass
-    finally:
-        if f != None:
-            f.close()
 
 
 def we_are_frozen():
@@ -111,6 +91,17 @@ def html_to_text(html):
 
 def openurl(url, timestamp=None):
     print 'openurl '+url
+
+    def handle(resp):
+        data = None
+        if resp.info().getheader("Content-Type") == "application/json":
+            data = json.load(resp)
+        else:
+            data = resp.read()
+        lastmod = resp.info().getheader("Last-Modified")
+        #resp.close()
+        return data, lastmod
+
     # fix for urllib2 proxy bug
     proxy_support = urllib2.ProxyHandler(proxy)
     opener = urllib2.build_opener(proxy_support)
@@ -119,19 +110,16 @@ def openurl(url, timestamp=None):
     request = urllib2.Request(url)
     if timestamp != None:
         request.add_header('If-Modified-Since', timestamp)
-    
     try:
-        url_handle = opener.open(request)
+        resp = opener.open(request)
         # got new data
-        return url_handle.read(), url_handle.info().getheader("Last-Modified")
+        return handle(resp)
     except urllib2.HTTPError, errorInfo:
         if errorInfo.code == 404:
             return 404, None
         if errorInfo.code == 304:
-            # no new data
-            return None, timestamp
-        # some other error
-        return errorInfo.code, None
+            return None, timestamp    # no new data
+        return errorInfo.code, None    # some other error
 
 
 class OpenUrlThreaded(threading.Thread):
@@ -159,209 +147,129 @@ class ThreadedResult(threading.Thread):
 
 class ChanBoard(object):
     def __init__(self, which):
-        self.url = 'http://boards.4chan.org/'+which
-        self.npages = None
-        #self.page_time = [None]*self.npages
-        self.page_time = []
+        self.board = which
+        self.npages = 1
+        self.page_time = [None]
         self.threads = {}
-        self.soup = None # beautiful
+
+    def _getcatalog(self):
+        return openurl("http://api.4chan.org/%s/catalog.json" % self.board, self.page_time[0])
+    
+    def _getallthreads(self,catalog):
+        threads = []
+        for p in catalog:
+            threads.extend(p["threads"])
+        return threads
+        
+    def _getthreadbumptime(self, thread):
+        if thread.get("last_replies"):
+            return thread["last_replies"][-1]["time"]
+        else:
+            return thread["time"]
     
     def update_iter(self):
-        start = 0
-        if self.npages == None:
-            changed_t, same_t = self.update_page(0)
-            yield changed_t, same_t
-            start = 1
-        for i in xrange(start, self.npages):
-            yield self.update_page(i)
+        yield self.update()
+
+    def update_page(self, i):
+        assert page == 1
+        return self.update()
     
     def update(self):
-        for changed_t, same_t in self.update_iter():
-            if not changed_t or (changed_t and not same_t):
-                if None not in self.page_time:
-                    break # everything is current
-    
-    def update_page(self, i):
-        i = int(i)
-        while len(self.page_time) <= i:
-            self.page_time.append(None)
-        if i:
-            u = self.url+'/'+str(i)
-        else:
-            u = self.url
-        
-        html, self.page_time[i] = openurl(u, self.page_time[i])
-        if html == None: # page hasn't been modified
-            return 0, None
-        self.soup = bs4.BeautifulSoup(html)
-        
-        if self.npages == None:
-            pls = self.soup.find('div', 'pagelist desktop')
-            pls = pls.find('div', 'pages')
-            lastpage = pls.findAll('a')[-1].string
-            print lastpage+' pages on board'
-            self.npages = int(lastpage)
-            while len(self.page_time) < int(lastpage):
-                self.page_time.append(None)
-        
-        changed_threads = 0
-        same_threads = 0
-        threads = self.soup.findAll('div', 'thread')
-        for t in threads:
-            url = t.find('a', 'replylink')['href'] # thread's url
-            headers = t.findAll('div', 'postContainer')
-            for h in headers:
-                h = h.find('div', 'desktop') # avoid the mobile stuff
-                poster_name = h.find('span', 'name').get_text()
-                poster_trip = h.find('span', 'trip')
-                if poster_trip != None:
-                    poster_trip = poster_trip.get_text()
-                t_time = h.find('span', 'dateTime').get_text()
-                id = h.find('span', 'postNum').findAll('a')
-                id = id[1].get_text() # number from 'Quote this post' link
-                h = h.parent # switch back to full post
+        catalog, _ = self._getcatalog()
 
-            if url not in self.threads:
-                self.threads[url] = ChanThread(self.url+'/'+url)
-                self.threads[url].bump_time = t_time
-                self.threads[url].need_update = True
-                changed_threads += 1
-            elif t_time != self.threads[url].bump_time:
-                #self.threads[t_url].update()
-                self.threads[url].bump_time = t_time
-                changed_threads += 1
+        # Last-Modified older than current time, nothing returned
+        if not catalog:
+            return 0, None
+
+        # same threads, changed threads
+        same, changed = 0, 0
+        for thread in self._getallthreads(catalog):
+            id = thread["no"]
+            if id in self.threads:
+                old = self.threads[id]
+                if old.bump_time != self._getthreadbumptime(thread):
+                    old.need_update = True
+                    old.bump_time = self._getthreadbumptime(thread)
+                    changed += 1
+                else:
+                    same += 1
             else:
-                same_threads += 1
-            try:
-                added, not_added = self.threads[url].update_from_soup(t)
-                if added == 1 and not_added == 0 and len(self.threads[url].posts.items()) == 1: # thread only has op post
-                    self.threads[url].need_update = False
-                if added and not_added == 1: # thread has more replies than are visible
-                    self.threads[url].need_update = True
-            except:
-                import traceback
-                print 'bad thread:',self.url+'/'+url
-                traceback.print_exc()
-                pass
-        
-        '''
-        for t_match in re.finditer(r'\[<a href="([^"]+)">Reply</a>\]', html):
-            t_url = t_match.group(1)
-            t_time = 0
-            if t_url not in self.threads:
-                self.threads[t_url] = ChanThread(self.url+'/'+t_url)
-                self.threads[t_url].bump_time = t_time
-                changed_threads += 1
-            elif t_time != self.threads[t_url].bump_time:
-                #self.threads[t_url].update()
-                self.threads[t_url].bump_time = t_time
-                changed_threads += 1
-            else:
-                same_threads += 1
-        '''
-        
-        return changed_threads, same_threads
-        
-    
-    def get_thread(self, t_url):
-        if t_url not in self.threads or self.threads[t_url] == None:
-            self.threads[t_url] = ChanThread(self.url+'/'+t_url)
+                newthread = ChanThread(self.board, id)
+                newthread.need_update = True
+                newthread.bump_time = self._getthreadbumptime(thread)
+                newthread.addpost(thread)
+                changed += 1
+                self.threads[id] = newthread
+            return changed, same
 
 
 class ChanThread(object):
     # no week day time hack regex
     noweekday_regex = re.compile(r'\([a-zA-Z]{3,3}?\)')
     
-    def __init__(self, url):
-        self.url = url
+    def __init__(self, board, threadnum):
+        self.board = board
+        self.threadnum = threadnum
         self.page_time = None
         self.posts = {}
         self.is_source = False
         self.ignore = False
         self.need_update = False
-        self.soup = None # beautiful
+        
+    def _getimgurl(self, name, ext):
+        return "http://images.4chan.org/%s/src/%s%s" % (self.board, name, ext)
+        
+    def _getthumburl(self, name):
+        return "http://thumbs.4chan.org/%s/thumb/%ss.jpg" % (self.board, name)
 
     def update(self):
-        html, self.page_time = openurl(self.url, self.page_time)
-        if html == None:
+        url = "http://api.4chan.org/%s/res/%s.json" % (self.board, self.threadnum)
+        data, self.page_time = openurl(url, self.page_time)
+        if data == None:
             return False
-        self.soup = bs4.BeautifulSoup(html)
-        t_area = self.soup.find('div', 'board')
-        return self.update_from_soup(t_area)
-    
-    def update_from_soup(self, t_area):
-        tsoup = t_area
-        added, not_added = 0, 0
-        for ps in tsoup.findAll('div', 'postContainer'):
-            ps = ps.find('div', 'desktop') # avoid the mobile stuff
-            name = ps.find('span', 'name').get_text()
-            trip = ps.find('span', 'trip')
-            if trip != None:
-                trip = trip.get_text()
-            time = ps.find('span', 'dateTime').get_text()
-            id = ps.find('span', 'postNum').findAll('a')
-            id = id[1].get_text() # number from 'Quote this post' link
-            ps = ps.parent # switch back to full post
+            
+        added, notadded = 0, 0
+        for p in data["posts"]:
+            if self.addpost(p):
+                added += 1
+            else:
+                notadded += 1
+        return added, notadded
+        
+    def addpost(self, post):
+        id = post["no"]
+        if id in self.posts:
+            return False
+        newpost = {
+            "id": id,
+            "subject": post.get("sub"),
+            "name": post.get("name"),
+            "trip": post.get("trip"),
+            "time": post["time"],
+            "comment": post.get("com", ""),
+            "email": post.get("email"),
+            "hasimg": False
+        }
+        if "filename" in post:
+            newpost.update({
+                "hasimg": True,
+                "imgname": post["filename"],
+                "imgsize": post["fsize"],
+                "imgw": post["w"],
+                "imgh": post["h"],
+                "imgurl": self._getimgurl(post["tim"], post["ext"]),
+                "thumburl": self._getthumburl(post["tim"])
+            })
+        self.posts[id] = newpost
+        return newpost["hasimg"]
 
-            # don't add this post if we already have it
-            if id in self.posts:
-                not_added += 1
-                continue
-            comment = ps.find('blockquote', 'postMessage').get_text()
-            email = "dongs"
-            subject = ps.find('span', 'subject').get_text()
-            img = ps.find('div', 'file')
-            post = self.posts[id] = {
-                'id': id,
-                'subject': subject,
-                'name': name,
-                'trip': trip,
-                'time': time,
-                'comment': comment,
-                'email': email,
-                'has_img': False
-            }
-            if img != None:
-                ft = img.find('a', 'fileThumb')
-                if (ft == None) or (ft.img['alt'] == 'File deleted.'):
-                    # never try to add deleted files, for 
-                    # that will cause exceptions later
-                    print id+' appears to have a deleted file; skipping'
-                    added += 1
-                    continue
-                fi = img.find('div', 'fileInfo').find('span', 'fileText')
-                post['has_img'] = True
-                post['img_url'] = fi.a['href']
-                post['img_thumburl'] = ft.img['src']
-                post['img_name'] = fi.find('span')['title']
-                matches = re.search('\((.*?), (.*?),', fi.get_text()).groups()
-                post['img_size'] = matches[0]
-                post['img_w'] = int(matches[1].split('x')[0])
-                post['img_h'] = int(matches[1].split('x')[1])
-                # 4chan now uses links that begin with '//';
-                # this causes problems, so we prepend a scheme as necessary
-                if post['img_url'].startswith('//'):
-                    post['img_url'] = 'http:' + post['img_url']
-                if post['img_thumburl'].startswith('//'):
-                    post['img_thumburl'] = 'http:' + post['img_thumburl']
-            added += 1
-        return added, not_added
-    
     def sorted_posts(self):
         result = self.posts.values()
         result.sort(key=lambda p: p['id'])
         return result
     
     def get_bump_time(self):
-        bump_post = self.sorted_posts()[-1]
-        bump_time = bump_post['time'].strip()
-        if bump_time == '':
-           # print BUMPTIME_EMPTY_VAL # for testing
-            return BUMPTIME_EMPTY_VAL
-        else:
-            bump_time = re.sub(self.noweekday_regex, '', bump_time) # removes the weekday so locales won't fail
-            #print bump_time # for testing
-            return time.strptime(bump_time, '%m/%d/%y%H:%M') 
+        return self.sorted_posts()[-1]["time"]
 
 
 class DLManagerDialog(wx.Dialog):
@@ -376,12 +284,12 @@ class DLManagerDialog(wx.Dialog):
 
         self.boardlist = getboardlist() 
         self.source_box = source_box = wx.ListBox(self, -1, size=(60,-1), choices=self.boardlist)
-        #source_box.Bind(wx.EVT_CHECKLISTBOX, self.SourceCheckListBox)
+        self.source_box.SetSelection(0)    # FIXME?
         source_box.Bind(wx.EVT_LISTBOX, self.SourceListBox)
         
         self.thread_panel = thread_panel = scrolled.ScrolledPanel(self)
         self.sizer_thread = wx.BoxSizer(wx.VERTICAL)
-        thread_panel.SetSizer( self.sizer_thread )
+        thread_panel.SetSizer(self.sizer_thread)
         thread_panel.SetAutoLayout(1)
         thread_panel.SetupScrolling()
         
@@ -414,20 +322,11 @@ class DLManagerDialog(wx.Dialog):
         for thread_panel in self.panel_threads:
             thread_panel.actual_thread_obj.is_source = False
             thread_panel.thread_panel_check.SetValue(False)
-        
-    def SourceCheckListBox(self, e):
-        index = e.GetSelection()
-        label = self.source_box.GetString(index)
-        checked = self.source_box.IsChecked(index)
-        if checked:
-            can_select = self.UpdateBoard(label)
-            if not can_select:
-                self.source_box.SetChecked(index, False)
-            else:
-                self.SelectBoard(label)
     
     def SourceListBox(self, e):
-        label = e.GetString()
+        label = e.GetString()    
+        if not label or not e.IsSelection():
+            return
         #self.SetAutoLayout(True)
         can_select = self.UpdateBoard(label)
         if can_select:
@@ -473,19 +372,10 @@ class DLManagerDialog(wx.Dialog):
                 t_key, thread = v
                 op_post = thread.sorted_posts()[0]
                 
-                # filter out thumbnails for spam posts
-                skip_thread = False
-                for spam_filter in spam_filters:
-                    if re.search(spam_filter, op_post['comment']):
-                        skip_thread = True
-                        break
-                if skip_thread:
-                    continue
-                
-                if 'img_thumburl' not in op_post:
+                if 'thumburl' not in op_post:
                     pass
                 elif not hasattr(thread, 'thumb_bmp'):
-                    op_thumb_url = op_post['img_thumburl']
+                    op_thumb_url = op_post['thumburl']
                     to_grab.append((thread, op_thumb_url))
             
             # get the ones we need
@@ -494,12 +384,9 @@ class DLManagerDialog(wx.Dialog):
                 'Loading thumbnails for /'+label+'/',
                 maximum=len(to_grab),
                 parent=self,
-                style=wx.PD_CAN_ABORT
-                    | wx.PD_ELAPSED_TIME
-                    | wx.PD_ESTIMATED_TIME
-                    | wx.PD_REMAINING_TIME
+                style=wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
+                    | wx.PD_ESTIMATED_TIME | wx.PD_REMAINING_TIME
             )
-            #for i, v in enumerate(to_grab):
             needed = len(to_grab)
             max_get = 8
             cur_get = []
@@ -526,7 +413,7 @@ class DLManagerDialog(wx.Dialog):
                         # restart if the connection was lost
                         if thumb_dat == 504:
                             op_post = thread.sorted_posts()[0]
-                            thumb_url = op_post['img_thumburl']
+                            thumb_url = op_post['thumburl']
                             getter = OpenUrlThreaded(thumb_url)
                             getter.start() # begin the thread
                             cur_get.append((thread, getter))
@@ -535,7 +422,7 @@ class DLManagerDialog(wx.Dialog):
                         elif thumb_dat != 404:
                             # write to thumb cache
                             op_post = thread.sorted_posts()[0]
-                            thumb_url = op_post['img_thumburl']
+                            thumb_url = op_post['thumburl']
                             thumb_path = os.path.join(thumb_cache, thumb_url.rsplit('/', 1)[-1])
                             try:
                                 f = None
@@ -555,16 +442,7 @@ class DLManagerDialog(wx.Dialog):
             t_key, thread = v
             # basic setup
             op_post = thread.sorted_posts()[0]
-            
-            # filter out all that goddamn SPAM
-            skip_thread = False
-            for spam_filter in spam_filters:
-                if re.search(spam_filter, op_post['comment']):
-                    skip_thread = True
-                    break
-            if skip_thread:
-                continue
-            
+
             # create a panel for this thread
             n = wx.Panel(self.thread_panel)
             n.actual_thread_obj = thread
@@ -587,7 +465,7 @@ class DLManagerDialog(wx.Dialog):
             content_sizer2 = wx.BoxSizer(wx.VERTICAL)
             
             # thumb display
-            #op_thumb_url = op_post['img_thumburl']
+            #op_thumb_url = op_post['thumburl']
             if hasattr(thread, 'thumb_bmp'):
                 bmp = thread.thumb_bmp
                 thumb_bmp = wx.StaticBitmap(n, -1, bmp)
@@ -612,8 +490,10 @@ class DLManagerDialog(wx.Dialog):
                 op_name.SetFont(font)
                 op_name.SetForegroundColour((17,119,67))
                 title_sizer.Add(op_name)
+            '''
             if op_post['trip'] != None:
                 op_name_text += ' '+html_to_text(op_post['trip']) #.decode("utf-8", "replace")
+            '''
             content_sizer2.Add(title_sizer)
             
             try: # 240, 224, 214 # 255,255,238
@@ -971,6 +851,12 @@ class ImageManager(object):
             except:
                 self.imgdata[imagepath].show_count += 50
                 return False
+
+            # wxPython doesn't support this under Linux, so skip gifs to avoid crash
+            if ani.GetFrameCount() == 0:
+                self.imgdata[imagepath].show_count += 50
+                return False
+
             self.cur_animated = True
             self.cur_ani_index = 0
             self.ani_counter = 0
@@ -1216,7 +1102,7 @@ class ImageManager(object):
             dc.SetFont(wx.Font(25, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
             dc.SetTextForeground((200, 200, 200))
             dc.DrawText("No images cached yet.", 10, dch/2 - 55)
-            dc.DrawText("Right-click to get started.", 10, dch/2 + 5)
+            dc.DrawText("Right-click to begin.", 10, dch/2 + 5)
             for i in self.imgdata:
                 switched = self.switchimg()
                 if switched:
@@ -1285,11 +1171,11 @@ class DownloadManager(threading.Thread):
                         if t.need_update:
                             t.update()
                             t.need_update = False
-                        image_posts.extend(filter(lambda p: 'img_url' in p, t.posts.values()))
+                        image_posts.extend(filter(lambda p: 'imgurl' in p, t.posts.values()))
                     to_get = []
                     pd = self.parent.imgmanager.playdata
                     for img_post in image_posts:
-                        image_base = img_post['img_url'].rsplit('/', 1)[-1]
+                        image_base = img_post['imgurl'].rsplit('/', 1)[-1]
                         if image_base not in os.listdir(cache_dir):
                             if image_base in pd and 'blacklisted' in pd[image_base]:
                                 pass # don't grab blacklisted files
@@ -1393,7 +1279,7 @@ class DownloadManager(threading.Thread):
                             
                             # even if we don't have a force or speed, we at least have a count
                             extra_data = detected_count, detected_speed, detected_force
-                        imgurl = which['img_url']
+                        imgurl = which['imgurl']
                         print "Downloading " + imgurl + " ...",
                         got, mod_time = openurl(imgurl)
                         image_base = imgurl.rsplit('/', 1)[-1]
@@ -1437,6 +1323,9 @@ class DownloadManager(threading.Thread):
 
 
 class MainFrame(wx.Frame):
+    def refresh_window(self, event):
+        self.Refresh()
+
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id, title, size=(800,600))
         self.SetDoubleBuffered(True)
@@ -1444,7 +1333,6 @@ class MainFrame(wx.Frame):
         self.board_downloaders = {}
         self.download_enabled = True
         self.gif_only_mode = False
-        self.refresh_timer = wx.CallLater(100, self.Refresh)
         self.mouse_timer = None
         self.key_state = False
         self.fap_frenzy = False
@@ -1452,6 +1340,10 @@ class MainFrame(wx.Frame):
         self.imgmanager = ImageManager()
         self.download_manager = DownloadManager(self)
         self.download_manager.start()
+
+        self.refresh_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.refresh_window, self.refresh_timer)
+        self.refresh_timer.Start(100)
         
         # basic prep
         self.SetBackgroundColour((0,0,34))
@@ -1634,7 +1526,7 @@ class MainFrame(wx.Frame):
     
     def OnExit(self, event):
         self.Close()
-        sys.exit()
+        exit()
     
     def OnLeftDown(self, event):
         if self.imgmanager.paused:
@@ -1718,9 +1610,9 @@ class MainFrame(wx.Frame):
             for b in a:
                 self.imgmanager.add_imgdata(b[0], b[1])
         if self.imgmanager.paused:
-            self.refresh_timer.Restart(100)
+            self.refresh_timer.Start(100)
         else:
-            self.refresh_timer.Restart(30) #16
+            self.refresh_timer.Start(30) #16
         self.imgmanager.showimg(self)
 
 
