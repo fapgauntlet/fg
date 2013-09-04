@@ -1,4 +1,2 @@
-- window does not refresh much, if at all, with Python 2.7.3 & wxpython 2.8.12 (Linux)
-- performance is hideous with very large images -- scale down?
-- readme is huge
-
+- clipping near the bottom of the download manager page -- some wx bounds exceeded?
+- GIF animations don't work on Linux due to wxWidgets issue
