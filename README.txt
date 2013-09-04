@@ -1,9 +1,9 @@
 So I was on 4chan, reading posts, and somebody posted this:
 
-"A script selects and displays an image at random from /h/,
-randomly selecting a pressure, speed, and time.
-This repeats until the user clicks the "I CAME" button,
-after which the user is presented with statistics about the session.
+"A script selects and displays an image at random from /h/, randomly
+selecting a pressure, speed, and time.  This repeats until the user
+clicks the "I CAME" button, after which the user is presented with
+statistics about the session.
 
 Programmers of /h/, MAKE IT SO."
 
