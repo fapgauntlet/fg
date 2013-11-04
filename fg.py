@@ -1331,13 +1331,20 @@ class DownloadManager(threading.Thread):
 
 
 class MainFrame(wx.Frame):
-    def refresh_window(self, event):
-        self.Refresh()
-
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id, title, size=(800,600))
         self.SetDoubleBuffered(True)
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
+        self.panel = MainPanel(self, wx.ID_ANY)
+        self.panel.SetFocus()
+        self.Show(True)
+
+class MainPanel(wx.Panel):
+    def refresh_window(self, event):
+        self.Refresh()
+
+    def __init__(self, parent, id):
+        wx.Panel.__init__(self, parent, id, size=(800,600))
         self.board_downloaders = {}
         self.download_enabled = True
         self.gif_only_mode = False
@@ -1623,8 +1630,6 @@ class MainFrame(wx.Frame):
             self.refresh_timer.Start(30) #16
         self.imgmanager.showimg(self)
 
-
 app = wx.App(redirect=False)
 mainframe = MainFrame(None, -1, 'Gauntlet')
 app.MainLoop()
-
