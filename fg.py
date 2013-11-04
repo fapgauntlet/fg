@@ -272,6 +272,12 @@ class ChanThread(object):
     def get_bump_time(self):
         return self.sorted_posts()[-1]["time"]
 
+    def is_gauntlet_thread(self):
+        subject = self.sorted_posts()[0]["subject"]
+        if not subject:
+            return False
+        return 'gauntlet' in subject.lower()
+
 
 class DLManagerDialog(wx.Dialog):
     def __init__(self, parent):
@@ -365,6 +371,7 @@ class DLManagerDialog(wx.Dialog):
         sorted_threads = b.threads.items()
         sorted_threads.sort(key=lambda i: i[1].get_bump_time())
         sorted_threads.reverse()
+        sorted_threads.sort(key=lambda i: not i[1].is_gauntlet_thread()) # show gauntlet threads first
         sorted_threads.sort(key=lambda i: i[1].ignore) # push ignored threads to end of list
         if filter(lambda a: not hasattr(a, 'thumb_bmp'), sorted_threads):
             # figure out which to get
