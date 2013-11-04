@@ -171,7 +171,7 @@ class ChanBoard(object):
         yield self.update()
 
     def update_page(self, i):
-        assert page == 1
+        assert i == 1
         return self.update()
     
     def update(self):
@@ -200,7 +200,8 @@ class ChanBoard(object):
                 newthread.addpost(thread)
                 changed += 1
                 self.threads[id] = newthread
-            return changed, same
+
+        return changed, same
 
 
 class ChanThread(object):
