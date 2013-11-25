@@ -77,15 +77,17 @@ if not os.path.exists(cache_dir) or not os.path.isdir(cache_dir):
 
 
 def html_to_text(html):
-    html = '"'.join(html.split('&quot;'))
-    html = '>'.join(html.split('&gt;'))
-    html = '<'.join(html.split('&lt;'))
-    html = '&'.join(html.split('&amp;'))
-    html = ','.join(html.split('&#44;'))
-    html = '\n'.join(html.split('<br />'))
-    html = '\n'.join(html.split('<br/>'))
-    html = '\n'.join(html.split('<br >'))
-    html = '\n'.join(html.split('<br>'))
+    html = html.replace('&quot;', '"')
+    html = html.replace('&#039;', "'")
+    html = html.replace('&gt;', '>')
+    html = html.replace('&lt;', '<')
+    html = html.replace('&amp;', '&')
+    html = html.replace('&#044;', ',')
+    html = html.replace('<br>', '\n')
+    html = re.sub(r'<span.*?>', r'', html)
+    html = re.sub(r'</span>', r'', html)
+    html = re.sub(r'<a .*?>', r'', html)
+    html = re.sub(r'</a>', r'', html)
     return html
 
 
