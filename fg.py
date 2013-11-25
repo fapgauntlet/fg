@@ -1078,7 +1078,7 @@ class ImageManager(object):
             
             # text stuff
             if 1:
-                x = 127-cos(radians(pos*360))*128
+                x = 127.5 - cos(radians(pos*360)) * 127.5
             else:
                 x = (pos > 0.5) * 255
                 
@@ -1633,3 +1633,4 @@ class MainPanel(wx.Panel):
 app = wx.App(redirect=False)
 mainframe = MainFrame(None, -1, 'Gauntlet')
 app.MainLoop()
+
