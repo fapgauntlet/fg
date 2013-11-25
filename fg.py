@@ -1375,26 +1375,26 @@ class MainPanel(wx.Panel):
         self.menu_scale.Check(True)
         
         self.menu_fullscreen_id = wx.NewId()
-        self.menu_fullscreen = wx.MenuItem(self.menu, self.menu_fullscreen_id, '&FullScreen', kind=wx.ITEM_CHECK)
+        self.menu_fullscreen = wx.MenuItem(self.menu, self.menu_fullscreen_id, '&Fullscreen', kind=wx.ITEM_CHECK)
         self.menu.AppendItem(self.menu_fullscreen)
         self.menu_fullscreen.Check(False)
         
         self.menu_dl_id = wx.NewId()
-        self.menu_dl = wx.MenuItem(self.menu, self.menu_dl_id, '&Download From Boards', kind=wx.ITEM_CHECK)
+        self.menu_dl = wx.MenuItem(self.menu, self.menu_dl_id, '&Download from boards', kind=wx.ITEM_CHECK)
         self.menu.AppendItem(self.menu_dl)
         self.menu_dl.Check(self.download_enabled)
         
         self.menu_black_id = wx.NewId()
-        self.menu_black = wx.MenuItem(self.menu, self.menu_black_id, '&Blacklist This Image')
+        self.menu_black = wx.MenuItem(self.menu, self.menu_black_id, '&Blacklist this image')
         self.menu.AppendItem(self.menu_black)
         
         self.menu_gifonly_id = wx.NewId()
-        self.menu_gifonly = wx.MenuItem(self.menu, self.menu_gifonly_id, '&Only Download Gifs', kind=wx.ITEM_CHECK)
+        self.menu_gifonly = wx.MenuItem(self.menu, self.menu_gifonly_id, '&Only download gifs', kind=wx.ITEM_CHECK)
         self.menu.AppendItem(self.menu_gifonly)
         self.menu_gifonly.Check(self.gif_only_mode)
         
         self.menu_autoadv_id = wx.NewId()
-        self.menu_autoadv = wx.MenuItem(self.menu, self.menu_autoadv_id, '&Auto Advance', kind=wx.ITEM_CHECK)
+        self.menu_autoadv = wx.MenuItem(self.menu, self.menu_autoadv_id, '&Auto advance', kind=wx.ITEM_CHECK)
         self.menu.AppendItem(self.menu_autoadv)
         self.menu_autoadv.Check(self.imgmanager.auto_advance)
         
@@ -1410,11 +1410,11 @@ class MainPanel(wx.Panel):
         self.menu.AppendSeparator()
         
         self.menu_addfolder_id = wx.NewId()
-        self.menu_addfolder = wx.MenuItem(self.menu, self.menu_addfolder_id, '&Add Folder')
+        self.menu_addfolder = wx.MenuItem(self.menu, self.menu_addfolder_id, '&Add folder')
         self.menu.AppendItem(self.menu_addfolder)
         
         self.menu_downmng_id = wx.NewId()
-        self.menu_downmng = wx.MenuItem(self.menu, self.menu_downmng_id, '&Download Manager')
+        self.menu_downmng = wx.MenuItem(self.menu, self.menu_downmng_id, '&Download manager')
         self.menu.AppendItem(self.menu_downmng)
         
         self.menu.AppendSeparator()
