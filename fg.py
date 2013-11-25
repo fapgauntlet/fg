@@ -1326,7 +1326,7 @@ class DownloadManager(threading.Thread):
                     self.last_full_refresh = time.time()
 
             except wx.PyDeadObjectError:
-                sys.exit()
+                os._exit(0)
             except:
                 import traceback
                 print 'Error in download management thread, attempting to recover'
@@ -1564,7 +1564,7 @@ class MainPanel(wx.Panel):
     
     def OnExit(self, event):
         self.Close()
-        exit()
+        os._exit(0)
     
     def OnLeftDown(self, event):
         if self.imgmanager.paused:
@@ -1629,7 +1629,7 @@ class MainPanel(wx.Panel):
                         break
             elif keycode == ord('Q'):
                 self.Close()
-                sys.exit()  
+                os._exit(0)
     
     def OnKeyUp(self, event):
         self.key_state = False
