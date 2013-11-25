@@ -43,3 +43,7 @@
 - sort threads in download manager such that OPs mentioning 'gauntlet' come first
 - minor aesthetic changes
 
+2013-11-26 | fg-11
+- fix keyboard input on Windows
+- save dispdata.cfg after every download completes
+
