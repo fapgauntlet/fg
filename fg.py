@@ -171,7 +171,7 @@ class ChanBoard(object):
         yield self.update()
 
     def update_page(self, i):
-        assert page == 1
+        assert i == 1
         return self.update()
     
     def update(self):
@@ -200,7 +200,8 @@ class ChanBoard(object):
                 newthread.addpost(thread)
                 changed += 1
                 self.threads[id] = newthread
-            return changed, same
+
+        return changed, same
 
 
 class ChanThread(object):
@@ -270,6 +271,12 @@ class ChanThread(object):
     
     def get_bump_time(self):
         return self.sorted_posts()[-1]["time"]
+
+    def is_gauntlet_thread(self):
+        subject = self.sorted_posts()[0]["subject"]
+        if not subject:
+            return False
+        return 'gauntlet' in subject.lower()
 
 
 class DLManagerDialog(wx.Dialog):
@@ -364,6 +371,7 @@ class DLManagerDialog(wx.Dialog):
         sorted_threads = b.threads.items()
         sorted_threads.sort(key=lambda i: i[1].get_bump_time())
         sorted_threads.reverse()
+        sorted_threads.sort(key=lambda i: not i[1].is_gauntlet_thread()) # show gauntlet threads first
         sorted_threads.sort(key=lambda i: i[1].ignore) # push ignored threads to end of list
         if filter(lambda a: not hasattr(a, 'thumb_bmp'), sorted_threads):
             # figure out which to get
@@ -1323,13 +1331,20 @@ class DownloadManager(threading.Thread):
 
 
 class MainFrame(wx.Frame):
-    def refresh_window(self, event):
-        self.Refresh()
-
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id, title, size=(800,600))
         self.SetDoubleBuffered(True)
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
+        self.panel = MainPanel(self, wx.ID_ANY)
+        self.panel.SetFocus()
+        self.Show(True)
+
+class MainPanel(wx.Panel):
+    def refresh_window(self, event):
+        self.Refresh()
+
+    def __init__(self, parent, id):
+        wx.Panel.__init__(self, parent, id, size=(800,600))
         self.board_downloaders = {}
         self.download_enabled = True
         self.gif_only_mode = False
@@ -1615,8 +1630,6 @@ class MainFrame(wx.Frame):
             self.refresh_timer.Start(30) #16
         self.imgmanager.showimg(self)
 
-
 app = wx.App(redirect=False)
 mainframe = MainFrame(None, -1, 'Gauntlet')
 app.MainLoop()
-
