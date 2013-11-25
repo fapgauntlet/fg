@@ -35,3 +35,11 @@
 - fix rendering at least in Linux
 - fix blinking text, now properly using color values between 0-255
 
+2013-11-25 | fg-10
+- fix download manager not displaying any threads (or only one thread)
+- fix keyboard input on Linux
+- fix html garbage appearing in download manager
+- add optional text size pulsation
+- sort threads in download manager such that OPs mentioning 'gauntlet' come first
+- minor aesthetic changes
+
