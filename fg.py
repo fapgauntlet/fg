@@ -1081,15 +1081,17 @@ class ImageManager(object):
                 x = 127.5 - cos(radians(pos*360)) * 127.5
             else:
                 x = (pos > 0.5) * 255
-                
-            dc.SetFont(wx.Font(35, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+            
+            # text expands along with colour pulse
+            dc.SetFont(wx.Font((1 - 0.2*cos(radians(pos*360))+1) * 16, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
             
             self.text = str(max(0, self.cur_count - count)) +', '+ self.cur_intensity
             
             tw, th = dc.GetTextExtent(self.text)
             tx, ty = (dcw-tw)/2, 0
             
-            inv_x = (255-x)/2
+            #inv_x = (255-x)/2
+            inv_x = 0
             dc.SetTextForeground((inv_x, inv_x, inv_x))
             dc.DrawText(self.text, tx+1, ty)
             dc.DrawText(self.text, tx-1, ty)
