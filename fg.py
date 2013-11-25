@@ -1300,7 +1300,7 @@ class DownloadManager(threading.Thread):
                             # even if we don't have a force or speed, we at least have a count
                             extra_data = detected_count, detected_speed, detected_force
                         imgurl = which['imgurl']
-                        print "Downloading " + imgurl + " ...",
+                        print "downloading " + imgurl + " ...",
                         got, mod_time = openurl(imgurl)
                         image_base = imgurl.rsplit('/', 1)[-1]
                         img_cache_path = cache_dir + image_base
@@ -1309,10 +1309,11 @@ class DownloadManager(threading.Thread):
                             f.write(got)
                             f.close()
                             self.new_cached.append((img_cache_path, extra_data))
+                            self.parent.imgmanager.save_display_data()
                             print "done"
                     else:
                         need_refresh = True
-                        sleep = 0.5
+                        sleep = 0
                 last_refresh = time.time() - self.last_full_refresh
                 if not need_refresh and (last_refresh > self.max_refresh_delay):
                     sleep = 0.0
@@ -1329,9 +1330,9 @@ class DownloadManager(threading.Thread):
                 os._exit(0)
             except:
                 import traceback
-                print 'Error in download management thread, attempting to recover'
+                print 'error in download management thread, attempting to recover'
                 traceback.print_exc()
-                sleep = 5.0
+                sleep = 0.5
             if sleep:
                 time.sleep(sleep) # wait a bit
     
