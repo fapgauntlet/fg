@@ -678,6 +678,7 @@ class ImageManager(object):
         self.scale_enabled = True
         self.folders = ['cache/']
         self.paused = False
+        self.pulsesize = True
         self.auto_advance = True
         self.last_pause_time = None
         self.fullscreen = False
@@ -1082,8 +1083,11 @@ class ImageManager(object):
             else:
                 x = (pos > 0.5) * 255
             
-            # text expands along with colour pulse
-            dc.SetFont(wx.Font((1 - 0.2*cos(radians(pos*360))+1) * 16, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+            if self.pulsesize:
+                #expand text size in sync with colour pulse
+                dc.SetFont(wx.Font((1 - 0.3*cos(radians(pos*360))+1) * 16, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+            else:
+           	dc.SetFont(wx.Font(35, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
             
             self.text = str(max(0, self.cur_count - count)) +', '+ self.cur_intensity
             
@@ -1388,6 +1392,11 @@ class MainPanel(wx.Panel):
         self.menu.AppendItem(self.menu_autoadv)
         self.menu_autoadv.Check(self.imgmanager.auto_advance)
         
+        self.menu_pulsesize_id = wx.NewId()
+        self.menu_pulsesize = wx.MenuItem(self.menu, self.menu_pulsesize_id, '&Pulse text size', kind=wx.ITEM_CHECK)
+        self.menu.AppendItem(self.menu_pulsesize)
+        self.menu_pulsesize.Check(True)
+        
         self.menu_fapfrenzy_id = wx.NewId()
         self.menu_fapfrenzy = wx.MenuItem(self.menu, self.menu_fapfrenzy_id, '&Fap Frenzy', kind=wx.ITEM_CHECK)
         self.menu.AppendItem(self.menu_fapfrenzy)
@@ -1435,6 +1444,7 @@ class MainPanel(wx.Panel):
         self.Bind(wx.EVT_MENU, self.OnBlackList, id=self.menu_black_id)
         self.Bind(wx.EVT_MENU, self.OnGifMode, id=self.menu_gifonly_id)
         self.Bind(wx.EVT_MENU, self.OnAutoAdvMode, id=self.menu_autoadv_id)
+        self.Bind(wx.EVT_MENU, self.OnPulseSize, id=self.menu_pulsesize_id)
         self.Bind(wx.EVT_MENU, self.OnFapFrenzy, id=self.menu_fapfrenzy_id)
         self.Bind(wx.EVT_MENU, self.OnICame, id=self.menu_icame_id)
         self.Bind(wx.EVT_MENU, self.OnAddFolder, id=self.menu_addfolder_id)
@@ -1493,6 +1503,11 @@ class MainPanel(wx.Panel):
     def OnAutoAdvMode(self, event):
         self.imgmanager.auto_advance = not self.imgmanager.auto_advance
         self.menu_autoadv.Check(self.imgmanager.auto_advance)
+        self.Unpause()
+        
+    def OnPulseSize(self, event):
+        self.imgmanager.pulsesize = not self.imgmanager.pulsesize
+        self.menu_pulsesize.Check(self.imgmanager.pulsesize)
         self.Unpause()
     
     def OnFapFrenzy(self, event):
