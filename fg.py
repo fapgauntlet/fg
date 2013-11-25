@@ -272,11 +272,15 @@ class ChanThread(object):
     def get_bump_time(self):
         return self.sorted_posts()[-1]["time"]
 
+    # returns true if 'gauntlet' appears in subject or post body
     def is_gauntlet_thread(self):
         subject = self.sorted_posts()[0]["subject"]
+        comment = self.sorted_posts()[0]["comment"]
         if not subject:
             return False
-        return 'gauntlet' in subject.lower()
+        if 'gauntlet' in subject.lower():
+            return True
+        return 'gauntlet' in comment.lower()
 
 
 class DLManagerDialog(wx.Dialog):
