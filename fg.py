@@ -1369,6 +1369,10 @@ class MainPanel(wx.Panel):
         # set up the menu
         self.menu = wx.Menu()
         
+        self.menu_icame_id = wx.NewId()
+        self.menu_icame = wx.MenuItem(self.menu, self.menu_icame_id, '&I CAME')
+        self.menu.AppendItem(self.menu_icame)
+        
         self.menu_scale_id = wx.NewId()
         self.menu_scale = wx.MenuItem(self.menu, self.menu_scale_id, '&Scale', kind=wx.ITEM_CHECK)
         self.menu.AppendItem(self.menu_scale)
@@ -1378,20 +1382,6 @@ class MainPanel(wx.Panel):
         self.menu_fullscreen = wx.MenuItem(self.menu, self.menu_fullscreen_id, '&Fullscreen', kind=wx.ITEM_CHECK)
         self.menu.AppendItem(self.menu_fullscreen)
         self.menu_fullscreen.Check(False)
-        
-        self.menu_dl_id = wx.NewId()
-        self.menu_dl = wx.MenuItem(self.menu, self.menu_dl_id, '&Download from boards', kind=wx.ITEM_CHECK)
-        self.menu.AppendItem(self.menu_dl)
-        self.menu_dl.Check(self.download_enabled)
-        
-        self.menu_black_id = wx.NewId()
-        self.menu_black = wx.MenuItem(self.menu, self.menu_black_id, '&Blacklist this image')
-        self.menu.AppendItem(self.menu_black)
-        
-        self.menu_gifonly_id = wx.NewId()
-        self.menu_gifonly = wx.MenuItem(self.menu, self.menu_gifonly_id, '&Only download gifs', kind=wx.ITEM_CHECK)
-        self.menu.AppendItem(self.menu_gifonly)
-        self.menu_gifonly.Check(self.gif_only_mode)
         
         self.menu_autoadv_id = wx.NewId()
         self.menu_autoadv = wx.MenuItem(self.menu, self.menu_autoadv_id, '&Auto advance', kind=wx.ITEM_CHECK)
@@ -1403,11 +1393,21 @@ class MainPanel(wx.Panel):
         self.menu.AppendItem(self.menu_fapfrenzy)
         self.menu_fapfrenzy.Check(self.fap_frenzy)
         
-        self.menu_icame_id = wx.NewId()
-        self.menu_icame = wx.MenuItem(self.menu, self.menu_icame_id, '&I CAME')
-        self.menu.AppendItem(self.menu_icame)
-        
         self.menu.AppendSeparator()
+        
+        self.menu_dl_id = wx.NewId()
+        self.menu_dl = wx.MenuItem(self.menu, self.menu_dl_id, '&Download from boards', kind=wx.ITEM_CHECK)
+        self.menu.AppendItem(self.menu_dl)
+        self.menu_dl.Check(self.download_enabled)
+        
+        self.menu_gifonly_id = wx.NewId()
+        self.menu_gifonly = wx.MenuItem(self.menu, self.menu_gifonly_id, '&Only download gifs', kind=wx.ITEM_CHECK)
+        self.menu.AppendItem(self.menu_gifonly)
+        self.menu_gifonly.Check(self.gif_only_mode)
+        
+        self.menu_black_id = wx.NewId()
+        self.menu_black = wx.MenuItem(self.menu, self.menu_black_id, '&Blacklist this image')
+        self.menu.AppendItem(self.menu_black)
         
         self.menu_addfolder_id = wx.NewId()
         self.menu_addfolder = wx.MenuItem(self.menu, self.menu_addfolder_id, '&Add folder')
