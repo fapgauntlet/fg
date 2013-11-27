@@ -47,3 +47,7 @@
 - fix keyboard input on Windows
 - save dispdata.cfg after every download completes
 
+2013-11-27 | fg-12
+- fix case sensitivity of file extensions in added folders
+- load '.jpeg' files from added folders
+

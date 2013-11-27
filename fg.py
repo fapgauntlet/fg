@@ -1153,7 +1153,7 @@ class ImageManager(object):
             for n in os.listdir(path):
                 m = os.path.join(path, n)
                 if os.path.isfile(m):
-                    if os.path.splitext(m)[1] in ('.gif', '.jpg', '.bmp', '.png'):
+                    if os.path.splitext(m)[1].lower() in ('.gif', '.jpg', '.jpeg', '.bmp', '.png'):
                         self.add_imgdata(m)
     
     def rem_folder_images(self, path):
